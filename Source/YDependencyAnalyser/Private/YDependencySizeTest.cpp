@@ -43,7 +43,7 @@ bool YDependencySizeTest::RunTest(const FString& Parameters)
 	{
 		for (auto WarningName : Warnings)
 		{
-			UE_LOG(LogDependencyAnalyser, Warning, TEXT("Larger than recommended %d size: %s"), WarningSize, *WarningName.ToString());
+			UE_LOG(LogDependencyAnalyser, Warning, TEXT("Larger than recommended %d MB size: %s"), WarningSize, *WarningName.ToString());
 		}
 	}
 
@@ -51,7 +51,7 @@ bool YDependencySizeTest::RunTest(const FString& Parameters)
 	{
 		for (auto ErrorName : Errors)
 		{
-			UE_LOG(LogDependencyAnalyser, Error, TEXT("Larger than max %d size: %s"), ErrorSize, *ErrorName.ToString());
+			UE_LOG(LogDependencyAnalyser, Error, TEXT("Larger than max %d MB size: %s"), ErrorSize, *ErrorName.ToString());
 		}
 		return false;
 	}

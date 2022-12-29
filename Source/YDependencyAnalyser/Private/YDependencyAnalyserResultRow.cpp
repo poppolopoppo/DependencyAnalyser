@@ -56,6 +56,7 @@ TSharedRef<SWidget> SYDependencyAnalyserResultRow::GenerateWidgetForColumn(const
 			SNew(STextBlock)
 			.Text(columnText)
 			.ColorAndOpacity(FLinearColor(FColor::Orange))
+			.OnDoubleClicked(this, &SYDependencyAnalyserResultRow::OnDoubleClicked)
 		];
 	}
 	else
@@ -64,6 +65,7 @@ TSharedRef<SWidget> SYDependencyAnalyserResultRow::GenerateWidgetForColumn(const
 		[
 			SNew(STextBlock)
 			.Text(columnText)
+			.OnDoubleClicked(this, &SYDependencyAnalyserResultRow::OnDoubleClicked)
 		];
 	}
 }
