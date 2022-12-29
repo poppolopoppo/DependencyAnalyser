@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "YDependencyAnalyser",
+	"Description": "Tool to analyse and measure asset dependencies and their size",
+	"Category": "Other",
+	"CreatedBy": "YAGER Interactive GmbH",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "YDependencyAnalyser",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	]
+}
