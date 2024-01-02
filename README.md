@@ -1,6 +1,8 @@
 # Dependency Analyser
 The Dependency Analyser is a UE5 plugin to measure and analyse bottlenecks in [asset dependency](https://docs.unrealengine.com/5.3/en-US/referencing-assets-in-unreal-engine/) sizes. It allows for quick inspection of all assets in a project and identification of optimisation opportunities, thanks to its integration with the size map tool and the automated testing framework.
 
+![dependency_analyser](https://github.com/YAGER-Development/YDependencyAnalyser/assets/17513294/c799d3d2-dbc4-4a32-8d90-6175635345da)
+
 ## Table of Contents
 - [Introduction to the Dependency Analyser](#introduction-to-the-dependency-analyser)
   - [Usage instructions](#usage-instructions)
@@ -36,9 +38,20 @@ The Dependency Analyser Tool comprises of the following features:
 5. Searchable results by Name or Type
 6. Sortable results by Name, Dependencies Count, Total Size, Type or Path
 
-TODO add image breakdown
+![tool_breakdown](https://github.com/YAGER-Development/YDependencyAnalyser/assets/17513294/9878555a-1d8c-406d-aa03-3e4b4bf9c598)
 
 ## Dependency Analyser Test Suite
-If the project has the Functional Testing Editor plugin enabled, the Dependency Analyser offers a test suite to run a dependency analysis on all assets. Users can customise error and warning sizes, and whether warnings should fail a test or not. The test is executed per-asset, so individual sizes of asset for each failing test can be identified. Test runs can be customised by navigating to `Edit > Editor Preferences > Advanced > Dependency Analyser` and modifying `Warning Size in MB`, `Error Size in MB` and `Fail for Warnings`.
+If the project has the [Functional Testing Editor plugin enabled](https://docs.unrealengine.com/5.3/en-US/automation-system-in-unreal-engine/#automationtestsmovedtoplugins), the Dependency Analyser offers a test suite to run a dependency analysis on all assets.
 
-TODO add image
+![test_tool](https://github.com/YAGER-Development/YDependencyAnalyser/assets/17513294/fb48a324-5462-45c5-8589-c5f9ebaf4c7d)
+
+The results can be visualised by:
+* Selecting the parent `DependencyAnalyser` test, for an overview of the duration and success/failure/warning rate
+* Selecting the individual per-asset test, to visualise information about failure reason and asset size
+* Inspecting the Message Logs, for an overview of failure reasons and asset sizes of all assets for which a test ran
+
+![test_log](https://github.com/YAGER-Development/YDependencyAnalyser/assets/17513294/8e40af64-bcc3-427c-b47e-e2aab4d79d95)
+
+Users can customise error and warning sizes, and whether warnings should fail a test or not. The test is executed per-asset, so individual sizes of asset for each failing test can be identified. Test runs can be customised by navigating to `Edit > Editor Preferences > Advanced > Dependency Analyser` and modifying `Warning Size in MB`, `Error Size in MB` and `Fail for Warnings`.
+
+![settings](https://github.com/YAGER-Development/YDependencyAnalyser/assets/17513294/4a1aa30b-c6fb-4aa7-855a-72f85de32b74)
