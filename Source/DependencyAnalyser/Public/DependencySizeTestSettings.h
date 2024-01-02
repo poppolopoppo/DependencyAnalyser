@@ -17,12 +17,20 @@ class DEPENDENCYANALYSER_API UDependencySizeTestSettings : public UObject
 public:
 	// 
 	UPROPERTY(EditAnywhere, config, Category="Default Values")
-	int32 WarningSizeInMB = 50;
+	int32 DefaultWarningSizeInMB = 50;
 
 	// 
 	UPROPERTY(EditAnywhere, config, Category="Default Values")
-	int32 ErrorSizeInMB = 500;
+	int32 DefaultErrorSizeInMB = 500;
 
+	//
+	UPROPERTY(EditAnywhere, config, Category="Extension Limits")
+	TMap<UClass*, int32> ErrorSizePerExtensionType;
+
+	//
+	UPROPERTY(EditAnywhere, config, Category="Extension Limits")
+	TMap<UClass*, int32> WarningSizePerExtensionType;
+	
 	// 
 	UPROPERTY(EditAnywhere, config, Category="Automated Testing")
 	bool bFailForWarnings;

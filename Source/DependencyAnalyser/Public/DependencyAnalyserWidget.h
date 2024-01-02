@@ -12,7 +12,7 @@ struct DEPENDENCYANALYSER_API FLineData
 	FString Name;
 	int32 DependenciesCount;
 	SIZE_T TotalSize;
-	FTopLevelAssetPath Type;
+	UClass* Class;
 	FName Path;
 };
 
@@ -28,6 +28,7 @@ public:
 	static FName Name_Type;
 	static FName Name_Path;
 
+	void LoadSettings();
 	void Construct(const FArguments& InArgs);
 
 private:
@@ -54,7 +55,4 @@ private:
 	TArray<TSharedPtr<FLineData>> LastRunResult;
 
 	FText Filter;
-
-	int32 DefaultWarningSize = 50;
-	int32 DefaultErrorSize = 500;
 };

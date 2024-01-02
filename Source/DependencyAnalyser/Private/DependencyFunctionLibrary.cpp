@@ -6,6 +6,8 @@
 
 TArray<FAssetData> UDependencyFunctionLibrary::RunAssetAudit(const FAssetRegistryModule& AssetRegistryModule)
 {
+	CacheConfig();
+	
 	TArray<FAssetData> AssetData;
 	AssetRegistryModule.Get().GetAssetsByPath("/Game", AssetData, true);
 
@@ -36,8 +38,74 @@ DependenciesData UDependencyFunctionLibrary::GetDependencies(const FAssetRegistr
 	return Data;
 }
 
+void UDependencyFunctionLibrary::CacheConfig()
+{
+	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("DefaultWarningSizeInMB"), CachedDefaultWarningSize, GEngineIni);
+	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("DefaultErrorSizeInMB"), CachedDefaultErrorSize, GEngineIni);
+	GConfig->GetBool(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("bFailForWarnings"), CachedFailForWarnings, GEngineIni);
+
+	FString SingleStringFromConfig;
+	TArray<FString> ExtensionTypes;
+
+	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("WarningSizePerExtensionType"), SingleStringFromConfig, GEngineIni);
+	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
+	
+	for (const FString& Type : ExtensionTypes)
+	{
+		FString ClassStr, SizeStr, PackageStr, NameStr;
+		Type.Split(TEXT(", "), &ClassStr, &SizeStr);
+		ClassStr.Split(TEXT("\'\""), &PackageStr, &NameStr);
+		NameStr.RemoveFromEnd(TEXT("\"\'"));
+
+		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *NameStr))
+		{
+			int32 ParsedSize = FCString::Atoi(*SizeStr);
+			CachedWarningSizePerType.Add(ParsedClass, ParsedSize);
+		}
+	}
+
+	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("ErrorSizePerExtensionType"), SingleStringFromConfig, GEngineIni);
+	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
+	
+	for (const FString& Type : ExtensionTypes)
+	{
+		FString ClassStr, SizeStr, PackageStr, NameStr;
+		Type.Split(TEXT(", "), &ClassStr, &SizeStr);
+		ClassStr.Split(TEXT("\'\""), &PackageStr, &NameStr);
+		NameStr.RemoveFromEnd(TEXT("\"\'"));
+
+		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *NameStr))
+		{
+			int32 ParsedSize = FCString::Atoi(*SizeStr);
+			CachedErrorSizePerType.Add(ParsedClass, ParsedSize);
+		}
+	}
+}
+
+bool UDependencyFunctionLibrary::IsWarningSize(const UClass* Class, const SIZE_T Size, int32& WarningSize)
+{
+	WarningSize = CachedDefaultWarningSize;
+	if (CachedWarningSizePerType.Contains(Class))
+	{
+		WarningSize = CachedWarningSizePerType.FindChecked(Class);
+	}
+		
+	return IsOverMBSize(Size, WarningSize);
+}
+
+bool UDependencyFunctionLibrary::IsErrorSize(const UClass* Class, const SIZE_T Size, int32& ErrorSize)
+{
+	ErrorSize = CachedDefaultErrorSize;
+	if (CachedErrorSizePerType.Contains(Class))
+	{
+		ErrorSize = CachedErrorSizePerType.FindChecked(Class);
+	}
+		
+	return IsOverMBSize(Size, ErrorSize);
+}
+
 void UDependencyFunctionLibrary::GetDependenciesRecursive(const FAssetRegistryModule& AssetRegistryModule,
-	FName PackageName, UE::AssetRegistry::EDependencyQuery QueryType, bool IgnoreDevFolders, TArray<FName>& Dependencies)
+                                                          FName PackageName, UE::AssetRegistry::EDependencyQuery QueryType, bool IgnoreDevFolders, TArray<FName>& Dependencies)
 {
 	TArray<FName> Subdependencies;
 	AssetRegistryModule.Get().GetDependencies(PackageName, Subdependencies,

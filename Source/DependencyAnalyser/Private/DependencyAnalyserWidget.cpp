@@ -21,9 +21,8 @@ FName SDependencyAnalyserWidget::Name_Path(TEXT("Path"));
 
 void SDependencyAnalyserWidget::Construct(const FArguments& InArgs)
 {
-	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("WarningSizeInMB"), DefaultWarningSize, GEngineIni);
-	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("ErrorSizeInMB"), DefaultErrorSize, GEngineIni);
-
+	UDependencyFunctionLibrary::CacheConfig();
+	
 	ChildSlot
 	[
 		SNew(SVerticalBox)
@@ -98,7 +97,7 @@ void SDependencyAnalyserWidget::Construct(const FArguments& InArgs)
 			.Padding(5, 0, 0, 0)
 			[
 				SAssignNew(WarningSize, SEditableTextBox)
-				.Text(FText::AsNumber(DefaultWarningSize))
+				.Text(FText::AsNumber(UDependencyFunctionLibrary::CachedDefaultWarningSize))
 			]
 
 			+ SHorizontalBox::Slot()
@@ -119,7 +118,7 @@ void SDependencyAnalyserWidget::Construct(const FArguments& InArgs)
 			.Padding(5, 0, 0, 0)
 			[
 				SAssignNew(ErrorSize, SEditableTextBox)
-				.Text(FText::AsNumber(DefaultErrorSize))
+				.Text(FText::AsNumber(UDependencyFunctionLibrary::CachedDefaultErrorSize))
 			]
 			
 			+ SHorizontalBox::Slot()
@@ -250,19 +249,20 @@ FReply SDependencyAnalyserWidget::OnRun()
 		}
 
 		FAssetData Result = Results[i];
-		const DependenciesData dependencies = UDependencyFunctionLibrary::GetDependencies(
+		const DependenciesData Dependencies = UDependencyFunctionLibrary::GetDependencies(
 			AssetRegistryModule,
 			Result.PackageName,
 			IncludeSoftRef->IsChecked(),
 			IgnoreDevFolders->IsChecked());
-		FLineData data = {Result.AssetName.ToString(), dependencies.Amount, dependencies.TotalSize, Result.AssetClassPath, Result.PackageName};
-		LinesData.Add(MakeShared<FLineData>(data));
+		FLineData Data = {Result.AssetName.ToString(), Dependencies.Amount, Dependencies.TotalSize, Result.GetClass(), Result.PackageName};
+		LinesData.Add(MakeShared<FLineData>(Data));
 
-		if (UDependencyFunctionLibrary::IsOverMBSize(dependencies.TotalSize, FCString::Atoi(*ErrorSize.Get()->GetText().ToString())))
+		int32 Size;
+		if (UDependencyFunctionLibrary::IsErrorSize(Data.Class, Data.TotalSize, Size))
 		{
 			ErrorAssetsCount++;
 		}
-		else if (UDependencyFunctionLibrary::IsOverMBSize(dependencies.TotalSize, FCString::Atoi(*WarningSize.Get()->GetText().ToString())))
+		else if (UDependencyFunctionLibrary::IsWarningSize(Data.Class, Data.TotalSize, Size))
 		{
 			WarningAssetsCount++;
 		}
@@ -292,7 +292,7 @@ FReply SDependencyAnalyserWidget::OnExport()
 			ToCStr(Line.Get()->Name),
 			Line.Get()->DependenciesCount,
 			static_cast<int32>(Line.Get()->TotalSize),
-			ToCStr(Line.Get()->Type.ToString()),
+			ToCStr(Line.Get()->Class->GetName()),
 			ToCStr(Line.Get()->Path.ToString()));
 		Lines.Add(data);
 	}
@@ -360,11 +360,9 @@ void SDependencyAnalyserWidget::RefreshResults()
 
 void SDependencyAnalyserWidget::GenerateResultText(int TotalAssetsCount, int ErrorAssetsCount, int WarningAssetsCount)
 {
-	const FString resultStr = FString::Printf(TEXT("There are %d assets larger than %dMB, %d assets larger than %dMB, out of a total of %d assets."),
+	const FString resultStr = FString::Printf(TEXT("There are %d assets larger than their maximum size and %d assets larger than their recommended size, out of a total of %d assets."),
 		ErrorAssetsCount,
-		FCString::Atoi(*ErrorSize.Get()->GetText().ToString()),
 		WarningAssetsCount,
-		FCString::Atoi(*WarningSize.Get()->GetText().ToString()),
 		TotalAssetsCount);
 
 	ResultsTextBlock.Get()->SetText(FText::FromString(resultStr));
@@ -377,7 +375,7 @@ bool SDependencyAnalyserWidget::DoesPassFilter(const TSharedPtr<FLineData, ESPMo
 		return true;
 	}
 
-	if (LineData.Get()->Type.ToString().Contains(Filter.ToString()))
+	if (LineData.Get()->Class->GetName().Contains(Filter.ToString()))
 	{
 		return true;
 	}
@@ -387,10 +385,11 @@ bool SDependencyAnalyserWidget::DoesPassFilter(const TSharedPtr<FLineData, ESPMo
 
 TSharedRef<ITableRow> SDependencyAnalyserWidget::OnGenerateLine(TSharedPtr<FLineData> Item, const TSharedRef<STableViewBase> &Table)
 {
+	int32 Size;
 	return SNew(SDependencyAnalyserResultRow, Table)
 		.Item(Item)
-		.IsWarningSize(UDependencyFunctionLibrary::IsOverMBSize(Item->TotalSize, FCString::Atoi(*WarningSize.Get()->GetText().ToString())))
-		.IsErrorSize(UDependencyFunctionLibrary::IsOverMBSize(Item->TotalSize, FCString::Atoi(*ErrorSize.Get()->GetText().ToString())));
+		.IsWarningSize(UDependencyFunctionLibrary::IsWarningSize(Item->Class, Item->TotalSize, Size))
+		.IsErrorSize(UDependencyFunctionLibrary::IsErrorSize(Item->Class, Item->TotalSize, Size));
 }
 
 void SDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::Type SortPriority, const FName& ColumnName, const EColumnSortMode::Type NewSortMode)
@@ -423,7 +422,7 @@ void SDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::Ty
 	{
 		auto ReferenceCountSorter = [](const TSharedPtr<FLineData>& A, const TSharedPtr<FLineData>& B)
 		{
-			return B.Get()->Type.ToString() > A.Get()->Type.ToString();
+			return B.Get()->Class->GetName() > A.Get()->Class->GetName();
 		};
 		LinesData.Sort(ReferenceCountSorter);
 	}

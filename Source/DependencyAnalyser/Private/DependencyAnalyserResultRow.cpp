@@ -33,7 +33,7 @@ TSharedRef<SWidget> SDependencyAnalyserResultRow::GenerateWidgetForColumn(const 
 	}
 	else if (ColumnName == SDependencyAnalyserWidget::Name_Type)
 	{
-		columnText = FText::FromName(Item->Type.GetAssetName());
+		columnText = FText::FromString(Item->Class->GetName());
 	}
 	else if (ColumnName == SDependencyAnalyserWidget::Name_Path)
 	{
