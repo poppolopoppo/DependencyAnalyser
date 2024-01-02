@@ -1,28 +1,29 @@
-// Copyright 2019 YAGER Development GmbH All Rights Reserved.
+// Copyright 2024 YAGER Development GmbH All Rights Reserved.
 
+#include "DependencyAnalyserWidget.h"
 
-#include "YDependencyAnalyserWidget.h"
-
-#include "YDependencyFunctionLibrary.h"
+#include "DependencyAnalyserResultRow.h"
+#include "DependencyFunctionLibrary.h"
 #include "SlateOptMacros.h"
-#include "SListViewSelectorDropdownMenu.h"
 #include "Misc/FileHelper.h"
 #include "Misc/ScopedSlowTask.h"
 #include "Widgets/Input/SSearchBox.h"
-#include "Widgets/Layout/SScrollBox.h"
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 
 DEFINE_LOG_CATEGORY(LogDependencyAnalyser);
 
-FName SYDependencyAnalyserWidget::NAME_Name(TEXT("Name"));
-FName SYDependencyAnalyserWidget::NAME_DependenciesCount(TEXT("Dependencies Count"));
-FName SYDependencyAnalyserWidget::NAME_TotalSize(TEXT("Total Size"));
-FName SYDependencyAnalyserWidget::NAME_Type(TEXT("Type"));
-FName SYDependencyAnalyserWidget::NAME_Path(TEXT("Path"));
+FName SDependencyAnalyserWidget::Name_Name(TEXT("Name"));
+FName SDependencyAnalyserWidget::Name_DependenciesCount(TEXT("Dependencies Count"));
+FName SDependencyAnalyserWidget::Name_TotalSize(TEXT("Total Size"));
+FName SDependencyAnalyserWidget::Name_Type(TEXT("Type"));
+FName SDependencyAnalyserWidget::Name_Path(TEXT("Path"));
 
-void SYDependencyAnalyserWidget::Construct(const FArguments& InArgs)
+void SDependencyAnalyserWidget::Construct(const FArguments& InArgs)
 {
+	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("WarningSizeInMB"), DefaultWarningSize, GEngineIni);
+	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("ErrorSizeInMB"), DefaultErrorSize, GEngineIni);
+
 	ChildSlot
 	[
 		SNew(SVerticalBox)
@@ -129,7 +130,7 @@ void SYDependencyAnalyserWidget::Construct(const FArguments& InArgs)
 				SNew(SButton)
 				.Text(FText::FromString(TEXT("Export as CSV")))
 				.ToolTipText(FText::FromString("Exports data (if any is listed) and brings up directory where CSV file is stored (overriding any existing file)"))
-				.OnClicked(this, &SYDependencyAnalyserWidget::OnExport)
+				.OnClicked(this, &SDependencyAnalyserWidget::OnExport)
 			]
 		]
 		
@@ -145,7 +146,7 @@ void SYDependencyAnalyserWidget::Construct(const FArguments& InArgs)
 				SNew(SButton)
 				.Text(FText::FromString(TEXT("Run Dependency Analysis")))
 				.ToolTipText(FText::FromString("Starts running dependency analysis - it might take some time!"))
-				.OnClicked(this, &SYDependencyAnalyserWidget::OnRun)
+				.OnClicked(this, &SDependencyAnalyserWidget::OnRun)
 			]
 		]
 
@@ -155,9 +156,9 @@ void SYDependencyAnalyserWidget::Construct(const FArguments& InArgs)
 		.Padding(5)
 		[
 			SNew(SSearchBox)
-			.HintText(FText::FromString(TEXT("Search Assets")))
-			.OnTextChanged(this, &SYDependencyAnalyserWidget::OnSearchBoxChanged)
-			.OnTextCommitted(this, &SYDependencyAnalyserWidget::OnSearchBoxCommitted)
+			.HintText(FText::FromString(TEXT("Search Assets by Name or Type...")))
+			.OnTextChanged(this, &SDependencyAnalyserWidget::OnSearchBoxChanged)
+			.OnTextCommitted(this, &SDependencyAnalyserWidget::OnSearchBoxCommitted)
 		]
 
 		+ SVerticalBox::Slot()
@@ -166,32 +167,37 @@ void SYDependencyAnalyserWidget::Construct(const FArguments& InArgs)
 		.Padding(5)
 		[
 			SAssignNew(ListView, SListView<TSharedPtr<FLineData>>)
-			.OnGenerateRow(this, &SYDependencyAnalyserWidget::OnGenerateLine)
+			.OnGenerateRow(this, &SDependencyAnalyserWidget::OnGenerateLine)
 			.ListItemsSource(&LinesData)
 			.ItemHeight(14)
 			.Visibility(EVisibility::Visible)
 			.HeaderRow(
 				SNew(SHeaderRow)
 				
-				+ SHeaderRow::Column(NAME_Name)
-				.DefaultLabel(FText::FromName(NAME_Name))
-				.OnSort(FOnSortModeChanged::CreateSP(this, &SYDependencyAnalyserWidget::OnSortColumnHeader))
+				+ SHeaderRow::Column(Name_Name)
+				.DefaultLabel(FText::FromName(Name_Name))
+				.FillWidth(0.2)
+				.OnSort(FOnSortModeChanged::CreateSP(this, &SDependencyAnalyserWidget::OnSortColumnHeader))
 				
-				+ SHeaderRow::Column(NAME_DependenciesCount)
-				.DefaultLabel(FText::FromName(NAME_DependenciesCount))
-				.OnSort(FOnSortModeChanged::CreateSP(this, &SYDependencyAnalyserWidget::OnSortColumnHeader))
+				+ SHeaderRow::Column(Name_DependenciesCount)
+				.DefaultLabel(FText::FromName(Name_DependenciesCount))
+				.FillWidth(0.2)
+				.OnSort(FOnSortModeChanged::CreateSP(this, &SDependencyAnalyserWidget::OnSortColumnHeader))
 
-				+ SHeaderRow::Column(NAME_TotalSize)
-				.DefaultLabel(FText::FromName(NAME_TotalSize))
-				.OnSort(FOnSortModeChanged::CreateSP(this, &SYDependencyAnalyserWidget::OnSortColumnHeader))
+				+ SHeaderRow::Column(Name_TotalSize)
+				.DefaultLabel(FText::FromName(Name_TotalSize))
+				.FillWidth(0.1)
+				.OnSort(FOnSortModeChanged::CreateSP(this, &SDependencyAnalyserWidget::OnSortColumnHeader))
 
-				+ SHeaderRow::Column(NAME_Type)
-				.DefaultLabel(FText::FromName(NAME_Type))
-				.OnSort(FOnSortModeChanged::CreateSP(this, &SYDependencyAnalyserWidget::OnSortColumnHeader))
+				+ SHeaderRow::Column(Name_Type)
+				.DefaultLabel(FText::FromName(Name_Type))
+				.FillWidth(0.2)
+				.OnSort(FOnSortModeChanged::CreateSP(this, &SDependencyAnalyserWidget::OnSortColumnHeader))
 				
-				+ SHeaderRow::Column(NAME_Path)
-				.DefaultLabel(FText::FromName(NAME_Path))
-				.OnSort(FOnSortModeChanged::CreateSP(this, &SYDependencyAnalyserWidget::OnSortColumnHeader))
+				+ SHeaderRow::Column(Name_Path)
+				.DefaultLabel(FText::FromName(Name_Path))
+				.FillWidth(0.3)
+				.OnSort(FOnSortModeChanged::CreateSP(this, &SDependencyAnalyserWidget::OnSortColumnHeader))
 			)
 		]
 		
@@ -221,10 +227,10 @@ void SYDependencyAnalyserWidget::Construct(const FArguments& InArgs)
 	];
 }
 
-FReply SYDependencyAnalyserWidget::OnRun()
+FReply SDependencyAnalyserWidget::OnRun()
 {
 	const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-	TArray<FAssetData> Results = UYDependencyFunctionLibrary::RunAssetAudit(AssetRegistryModule);
+	TArray<FAssetData> Results = UDependencyFunctionLibrary::RunAssetAudit(AssetRegistryModule);
 
 	LinesData.Empty();
 
@@ -244,19 +250,19 @@ FReply SYDependencyAnalyserWidget::OnRun()
 		}
 
 		FAssetData Result = Results[i];
-		const DependenciesData dependencies = UYDependencyFunctionLibrary::GetDependencies(
+		const DependenciesData dependencies = UDependencyFunctionLibrary::GetDependencies(
 			AssetRegistryModule,
 			Result.PackageName,
 			IncludeSoftRef->IsChecked(),
 			IgnoreDevFolders->IsChecked());
-		FLineData data = {Result.AssetName.ToString(), dependencies.Amount, dependencies.TotalSize, Result.AssetClass, Result.PackageName};
+		FLineData data = {Result.AssetName.ToString(), dependencies.Amount, dependencies.TotalSize, Result.AssetClassPath, Result.PackageName};
 		LinesData.Add(MakeShared<FLineData>(data));
 
-		if (UYDependencyFunctionLibrary::IsOverMBSize(dependencies.TotalSize, FCString::Atoi(*ErrorSize.Get()->GetText().ToString())))
+		if (UDependencyFunctionLibrary::IsOverMBSize(dependencies.TotalSize, FCString::Atoi(*ErrorSize.Get()->GetText().ToString())))
 		{
 			ErrorAssetsCount++;
 		}
-		else if (UYDependencyFunctionLibrary::IsOverMBSize(dependencies.TotalSize, FCString::Atoi(*WarningSize.Get()->GetText().ToString())))
+		else if (UDependencyFunctionLibrary::IsOverMBSize(dependencies.TotalSize, FCString::Atoi(*WarningSize.Get()->GetText().ToString())))
 		{
 			WarningAssetsCount++;
 		}
@@ -277,7 +283,7 @@ FReply SYDependencyAnalyserWidget::OnRun()
 	return FReply::Handled();
 }
 
-FReply SYDependencyAnalyserWidget::OnExport()
+FReply SDependencyAnalyserWidget::OnExport()
 {
 	TArray<FString> Lines;
 	for (auto Line : LinesData)
@@ -307,7 +313,7 @@ FReply SYDependencyAnalyserWidget::OnExport()
 	return FReply::Handled();
 }
 
-void SYDependencyAnalyserWidget::OnSearchBoxChanged(const FText& InSearchText)
+void SDependencyAnalyserWidget::OnSearchBoxChanged(const FText& InSearchText)
 {
 	if (!InSearchText.IsEmptyOrWhitespace())
 	{
@@ -323,7 +329,7 @@ void SYDependencyAnalyserWidget::OnSearchBoxChanged(const FText& InSearchText)
 	ListView->RequestListRefresh();
 }
 
-void SYDependencyAnalyserWidget::OnSearchBoxCommitted(const FText& InSearchText, ETextCommit::Type CommitInfo)
+void SDependencyAnalyserWidget::OnSearchBoxCommitted(const FText& InSearchText, ETextCommit::Type CommitInfo)
 {
 	if (!InSearchText.IsEmptyOrWhitespace())
 	{
@@ -339,7 +345,7 @@ void SYDependencyAnalyserWidget::OnSearchBoxCommitted(const FText& InSearchText,
 	ListView->RequestListRefresh();
 }
 
-void SYDependencyAnalyserWidget::RefreshResults()
+void SDependencyAnalyserWidget::RefreshResults()
 {
 	LinesData.Empty();
 	
@@ -352,9 +358,9 @@ void SYDependencyAnalyserWidget::RefreshResults()
 	}
 }
 
-void SYDependencyAnalyserWidget::GenerateResultText(int TotalAssetsCount, int ErrorAssetsCount, int WarningAssetsCount)
+void SDependencyAnalyserWidget::GenerateResultText(int TotalAssetsCount, int ErrorAssetsCount, int WarningAssetsCount)
 {
-	const FString resultStr = FString::Printf(TEXT("There are %d assets larger than %dMB %d assets larger than %dMB, out of a total of %d assets."),
+	const FString resultStr = FString::Printf(TEXT("There are %d assets larger than %dMB, %d assets larger than %dMB, out of a total of %d assets."),
 		ErrorAssetsCount,
 		FCString::Atoi(*ErrorSize.Get()->GetText().ToString()),
 		WarningAssetsCount,
@@ -364,7 +370,7 @@ void SYDependencyAnalyserWidget::GenerateResultText(int TotalAssetsCount, int Er
 	ResultsTextBlock.Get()->SetText(FText::FromString(resultStr));
 }
 
-bool SYDependencyAnalyserWidget::DoesPassFilter(const TSharedPtr<FLineData, ESPMode::Fast>& LineData)
+bool SDependencyAnalyserWidget::DoesPassFilter(const TSharedPtr<FLineData, ESPMode::ThreadSafe>& LineData)
 {
 	if (LineData.Get()->Name.Contains(Filter.ToString()))
 	{
@@ -379,17 +385,17 @@ bool SYDependencyAnalyserWidget::DoesPassFilter(const TSharedPtr<FLineData, ESPM
 	return false;
 }
 
-TSharedRef<ITableRow> SYDependencyAnalyserWidget::OnGenerateLine(TSharedPtr<FLineData> Item, const TSharedRef<STableViewBase> &Table)
+TSharedRef<ITableRow> SDependencyAnalyserWidget::OnGenerateLine(TSharedPtr<FLineData> Item, const TSharedRef<STableViewBase> &Table)
 {
-	return SNew(SYDependencyAnalyserResultRow, Table)
+	return SNew(SDependencyAnalyserResultRow, Table)
 		.Item(Item)
-		.IsWarningSize(UYDependencyFunctionLibrary::IsOverMBSize(Item->TotalSize, FCString::Atoi(*WarningSize.Get()->GetText().ToString())))
-		.IsErrorSize(UYDependencyFunctionLibrary::IsOverMBSize(Item->TotalSize, FCString::Atoi(*ErrorSize.Get()->GetText().ToString())));
+		.IsWarningSize(UDependencyFunctionLibrary::IsOverMBSize(Item->TotalSize, FCString::Atoi(*WarningSize.Get()->GetText().ToString())))
+		.IsErrorSize(UDependencyFunctionLibrary::IsOverMBSize(Item->TotalSize, FCString::Atoi(*ErrorSize.Get()->GetText().ToString())));
 }
 
-void SYDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::Type SortPriority, const FName& ColumnName, const EColumnSortMode::Type NewSortMode)
+void SDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::Type SortPriority, const FName& ColumnName, const EColumnSortMode::Type NewSortMode)
 {
-	if (ColumnName == NAME_Name)
+	if (ColumnName == Name_Name)
 	{
 		auto ReferenceCountSorter = [](const TSharedPtr<FLineData>& A, const TSharedPtr<FLineData>& B)
 		{
@@ -397,7 +403,7 @@ void SYDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::T
 		};
 		LinesData.Sort(ReferenceCountSorter);
 	}
-	else if (ColumnName == NAME_DependenciesCount)
+	else if (ColumnName == Name_DependenciesCount)
 	{
 		auto ReferenceCountSorter = [](const TSharedPtr<FLineData>& A, const TSharedPtr<FLineData>& B)
 		{
@@ -405,7 +411,7 @@ void SYDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::T
 		};
 		LinesData.Sort(ReferenceCountSorter);
 	}
-	else if (ColumnName == NAME_TotalSize)
+	else if (ColumnName == Name_TotalSize)
 	{
 		auto ReferenceCountSorter = [](const TSharedPtr<FLineData>& A, const TSharedPtr<FLineData>& B)
 		{
@@ -413,7 +419,7 @@ void SYDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::T
 		};
 		LinesData.Sort(ReferenceCountSorter);
 	}
-	else if (ColumnName == NAME_Type)
+	else if (ColumnName == Name_Type)
 	{
 		auto ReferenceCountSorter = [](const TSharedPtr<FLineData>& A, const TSharedPtr<FLineData>& B)
 		{
@@ -421,7 +427,7 @@ void SYDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::T
 		};
 		LinesData.Sort(ReferenceCountSorter);
 	}
-	else if (ColumnName == NAME_Path)
+	else if (ColumnName == Name_Path)
 	{
 		auto ReferenceCountSorter = [](const TSharedPtr<FLineData>& A, const TSharedPtr<FLineData>& B)
 		{
@@ -432,6 +438,5 @@ void SYDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::T
 
 	ListView.Get()->RequestListRefresh();
 }
-
 
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION

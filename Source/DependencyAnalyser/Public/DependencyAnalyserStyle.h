@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2024 YAGER Development GmbH All Rights Reserved.
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #include "Styling/SlateStyle.h"
 
 /**  */
-class FYDependencyAnalyserStyle
+class FDependencyAnalyserStyle
 {
 public:
 

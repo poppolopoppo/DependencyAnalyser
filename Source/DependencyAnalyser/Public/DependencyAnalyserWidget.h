@@ -1,35 +1,32 @@
-// Copyright 2019 YAGER Development GmbH All Rights Reserved.
+// Copyright 2024 YAGER Development GmbH All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SListViewSelectorDropdownMenu.h"
 #include "Widgets/SCompoundWidget.h"
-#include "YDependencyAnalyserResultRow.h"
-#include "Widgets/Notifications/SProgressBar.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogDependencyAnalyser, All, All);
 
-struct YDEPENDENCYANALYSER_API FLineData
+struct DEPENDENCYANALYSER_API FLineData
 {
 	FString Name;
 	int32 DependenciesCount;
 	SIZE_T TotalSize;
-	FName Type;
+	FTopLevelAssetPath Type;
 	FName Path;
 };
 
-class YDEPENDENCYANALYSER_API SYDependencyAnalyserWidget : public SCompoundWidget
+class DEPENDENCYANALYSER_API SDependencyAnalyserWidget : public SCompoundWidget
 {
 public:
-	SLATE_BEGIN_ARGS(SYDependencyAnalyserWidget) {}
+	SLATE_BEGIN_ARGS(SDependencyAnalyserWidget) {}
 	SLATE_END_ARGS()
 
-	static FName NAME_Name;
-	static FName NAME_DependenciesCount;
-	static FName NAME_TotalSize;
-	static FName NAME_Type;
-	static FName NAME_Path;
+	static FName Name_Name;
+	static FName Name_DependenciesCount;
+	static FName Name_TotalSize;
+	static FName Name_Type;
+	static FName Name_Path;
 
 	void Construct(const FArguments& InArgs);
 
@@ -42,9 +39,9 @@ private:
 	void OnSearchBoxCommitted(const FText& InSearchText, ETextCommit::Type CommitInfo);
 	void OnSortColumnHeader(const EColumnSortPriority::Type SortPriority, const FName& ColumnName, const EColumnSortMode::Type NewSortMode);
 
-	bool DoesPassFilter(const TSharedPtr<FLineData, ESPMode::Fast>& LineData);
+	bool DoesPassFilter(const TSharedPtr<FLineData, ESPMode::ThreadSafe>& LineData);
 	
-	TSharedRef<ITableRow> OnGenerateLine(TSharedPtr<FLineData> Item, const TSharedRef<STableViewBase> &myTable);
+	TSharedRef<ITableRow> OnGenerateLine(TSharedPtr<FLineData> Item, const TSharedRef<STableViewBase> &MyTable);
 
 	TSharedPtr<SCheckBox> IncludeSoftRef;
 	TSharedPtr<SCheckBox> IgnoreDevFolders;
@@ -58,6 +55,6 @@ private:
 
 	FText Filter;
 
-	int DefaultWarningSize = 50;
-	int DefaultErrorSize = 500;
+	int32 DefaultWarningSize = 50;
+	int32 DefaultErrorSize = 500;
 };

@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class YDependencyAnalyser : ModuleRules
+public class DependencyAnalyser : ModuleRules
 {
-	public YDependencyAnalyser(ReadOnlyTargetRules Target) : base(Target)
+	public DependencyAnalyser(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		

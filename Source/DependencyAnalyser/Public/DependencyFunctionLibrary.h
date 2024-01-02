@@ -1,20 +1,20 @@
-// Copyright 2019 YAGER Development GmbH All Rights Reserved.
+// Copyright 2024 YAGER Development GmbH All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "YDependencyFunctionLibrary.generated.h"
+#include "DependencyFunctionLibrary.generated.h"
 
-struct YDEPENDENCYANALYSER_API DependenciesData
+struct DEPENDENCYANALYSER_API DependenciesData
 {
 	int32 Amount;
 	SIZE_T TotalSize;
 };
 
 UCLASS()
-class YDEPENDENCYANALYSER_API UYDependencyFunctionLibrary : public UBlueprintFunctionLibrary
+class DEPENDENCYANALYSER_API UDependencyFunctionLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 

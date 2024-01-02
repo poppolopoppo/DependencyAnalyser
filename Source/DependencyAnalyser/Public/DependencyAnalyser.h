@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2024 YAGER Development GmbH All Rights Reserved.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 class FToolBarBuilder;
 class FMenuBuilder;
 
-class FYDependencyAnalyserModule : public IModuleInterface, public TSharedFromThis<FYDependencyAnalyserModule>
+class FDependencyAnalyserModule : public IModuleInterface, public TSharedFromThis<FDependencyAnalyserModule>
 {
 public:
 

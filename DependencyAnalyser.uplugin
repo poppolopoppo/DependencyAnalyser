@@ -2,7 +2,7 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "1.0",
-	"FriendlyName": "YDependencyAnalyser",
+	"FriendlyName": "DependencyAnalyser",
 	"Description": "Tool to analyse and measure asset dependencies and their size",
 	"Category": "YAGER.Plugins",
 	"CreatedBy": "YAGER Interactive GmbH",
@@ -16,9 +16,15 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "YDependencyAnalyser",
+			"Name": "DependencyAnalyser",
 			"Type": "Editor",
 			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "AssetManagerEditor",
+			"Enabled": true
 		}
 	]
 }

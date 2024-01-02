@@ -1,10 +1,10 @@
-// Copyright 2019 YAGER Development GmbH All Rights Reserved.
+// Copyright 2024 YAGER Development GmbH All Rights Reserved.
 
-#include "YDependencyFunctionLibrary.h"
+#include "DependencyFunctionLibrary.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 
 
-TArray<FAssetData> UYDependencyFunctionLibrary::RunAssetAudit(const FAssetRegistryModule& AssetRegistryModule)
+TArray<FAssetData> UDependencyFunctionLibrary::RunAssetAudit(const FAssetRegistryModule& AssetRegistryModule)
 {
 	TArray<FAssetData> AssetData;
 	AssetRegistryModule.Get().GetAssetsByPath("/Game", AssetData, true);
@@ -12,7 +12,7 @@ TArray<FAssetData> UYDependencyFunctionLibrary::RunAssetAudit(const FAssetRegist
 	return AssetData;
 }
 
-DependenciesData UYDependencyFunctionLibrary::GetDependencies(const FAssetRegistryModule& AssetRegistryModule,
+DependenciesData UDependencyFunctionLibrary::GetDependencies(const FAssetRegistryModule& AssetRegistryModule,
 	FName PackageName, bool IncludeSoftReferences, bool IgnoreDevFolders)
 {
 	DependenciesData Data = {0, 0};
@@ -27,7 +27,7 @@ DependenciesData UYDependencyFunctionLibrary::GetDependencies(const FAssetRegist
 	
 	for (const FName& dependency : Dependencies)
 	{
-		const FAssetPackageData* pckgData = AssetRegistryModule.Get().GetAssetPackageData(dependency);
+		const TOptional<FAssetPackageData> pckgData = AssetRegistryModule.Get().GetAssetPackageDataCopy(dependency);
 		
 		Data.Amount++;
 		Data.TotalSize += pckgData->DiskSize;
@@ -36,7 +36,7 @@ DependenciesData UYDependencyFunctionLibrary::GetDependencies(const FAssetRegist
 	return Data;
 }
 
-void UYDependencyFunctionLibrary::GetDependenciesRecursive(const FAssetRegistryModule& AssetRegistryModule,
+void UDependencyFunctionLibrary::GetDependenciesRecursive(const FAssetRegistryModule& AssetRegistryModule,
 	FName PackageName, UE::AssetRegistry::EDependencyQuery QueryType, bool IgnoreDevFolders, TArray<FName>& Dependencies)
 {
 	TArray<FName> Subdependencies;
@@ -55,7 +55,7 @@ void UYDependencyFunctionLibrary::GetDependenciesRecursive(const FAssetRegistryM
 			continue;
 		}
 
-		if (!AssetRegistryModule.Get().GetAssetPackageData(Subdependency))
+		if (!AssetRegistryModule.Get().GetAssetPackageDataCopy(Subdependency))
 		{
 			continue;
 		}
@@ -66,7 +66,7 @@ void UYDependencyFunctionLibrary::GetDependenciesRecursive(const FAssetRegistryM
 	}
 }
 
-bool UYDependencyFunctionLibrary::IsOverMBSize(const SIZE_T Size, int32 SizeMB)
+bool UDependencyFunctionLibrary::IsOverMBSize(const SIZE_T Size, int32 SizeMB)
 {
 	return Size >= SizeMB * 1000000;
 }
