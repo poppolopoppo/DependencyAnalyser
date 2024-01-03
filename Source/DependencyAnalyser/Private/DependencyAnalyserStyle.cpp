@@ -1,12 +1,12 @@
 // Copyright 2024 YAGER Development GmbH All Rights Reserved.
 
-#include "..\Public\DependencyAnalyserStyle.h"
+#include "DependencyAnalyserStyle.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Slate/SlateGameResources.h"
 #include "Interfaces/IPluginManager.h"
 
-TSharedPtr< FSlateStyleSet > FDependencyAnalyserStyle::StyleInstance = NULL;
+TSharedPtr<FSlateStyleSet> FDependencyAnalyserStyle::StyleInstance = nullptr;
 
 void FDependencyAnalyserStyle::Initialize()
 {

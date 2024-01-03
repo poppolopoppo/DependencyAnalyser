@@ -6,57 +6,57 @@
 #include "ContentBrowserModule.h"
 #include "IContentBrowserSingleton.h"
 
-void SDependencyAnalyserResultRow::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& InOwnerTableView)
+void SDependencyAnalyserResultRow::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwnerTableView)
 {
 	Item = InArgs._Item;
-	IsWarningSize = InArgs._IsWarningSize;
-	IsErrorSize = InArgs._IsErrorSize;
+	bIsWarningSize = InArgs._IsWarningSize;
+	bIsErrorSize = InArgs._IsErrorSize;
 	
-	SMultiColumnTableRow<TSharedPtr<FLineData>>::Construct(FSuperRowType::FArguments(), InOwnerTableView);
+	SMultiColumnTableRow::Construct(FSuperRowType::FArguments(), OwnerTableView);
 }
 
-TSharedRef<SWidget> SDependencyAnalyserResultRow::GenerateWidgetForColumn(const FName& ColumnName)
+TSharedRef<SWidget> SDependencyAnalyserResultRow::GenerateWidgetForColumn(const FName& InColumnName)
 {
-	FText columnText;
+	FText ColumnText;
 	
-	if (ColumnName == SDependencyAnalyserWidget::Name_Name)
+	if (InColumnName == SDependencyAnalyserWidget::Name_Name)
 	{
-		columnText = FText::FromString(*Item->Name);
+		ColumnText = FText::FromString(*Item->Name);
 	}
-	else if (ColumnName == SDependencyAnalyserWidget::Name_DependenciesCount)
+	else if (InColumnName == SDependencyAnalyserWidget::Name_DependenciesCount)
 	{
-		columnText = FText::FromString(FString::FromInt(Item->DependenciesCount));
+		ColumnText = FText::FromString(FString::FromInt(Item->DependenciesCount));
 	}
-	else if (ColumnName == SDependencyAnalyserWidget::Name_TotalSize)
+	else if (InColumnName == SDependencyAnalyserWidget::Name_TotalSize)
 	{
-		columnText = GetSizeText(Item->TotalSize);
+		ColumnText = GetSizeText(Item->TotalSize);
 	}
-	else if (ColumnName == SDependencyAnalyserWidget::Name_Type)
+	else if (InColumnName == SDependencyAnalyserWidget::Name_Type)
 	{
-		columnText = FText::FromString(Item->Class->GetName());
+		ColumnText = FText::FromString(Item->Class->GetName());
 	}
-	else if (ColumnName == SDependencyAnalyserWidget::Name_Path)
+	else if (InColumnName == SDependencyAnalyserWidget::Name_Path)
 	{
-		columnText = FText::FromName(Item->Path);
+		ColumnText = FText::FromName(Item->Path);
 	}
 
-	if (IsErrorSize)
+	if (bIsErrorSize)
 	{
 		return SNew(SBorder)
 		[
 			SNew(STextBlock)
-			.Text(columnText)
+			.Text(ColumnText)
 			.ColorAndOpacity(FLinearColor(FColor::Red))
 			.OnDoubleClicked(this, &SDependencyAnalyserResultRow::OnDoubleClicked)
 		]
 		.OnMouseButtonDown(this, &SDependencyAnalyserResultRow::OnClicked);
 	}
-	else if (IsWarningSize)
+	else if (bIsWarningSize)
 	{
 		return SNew(SBorder)
 		[
 			SNew(STextBlock)
-			.Text(columnText)
+			.Text(ColumnText)
 			.ColorAndOpacity(FLinearColor(FColor::Orange))
 			.OnDoubleClicked(this, &SDependencyAnalyserResultRow::OnDoubleClicked)
 		]
@@ -67,7 +67,7 @@ TSharedRef<SWidget> SDependencyAnalyserResultRow::GenerateWidgetForColumn(const 
 		return SNew(SBorder)
 		[
 			SNew(STextBlock)
-			.Text(columnText)
+			.Text(ColumnText)
 			.OnDoubleClicked(this, &SDependencyAnalyserResultRow::OnDoubleClicked)
 		]
 		.OnMouseButtonDown(this, &SDependencyAnalyserResultRow::OnClicked);
@@ -76,7 +76,7 @@ TSharedRef<SWidget> SDependencyAnalyserResultRow::GenerateWidgetForColumn(const 
 
 FReply SDependencyAnalyserResultRow::OnDoubleClicked(const FGeometry& MyGeometry, const FPointerEvent& PointerEvent) const
 {
-	IAssetManagerEditorModule::Get().OpenSizeMapUI(TArray<FName> {Item->Path});
+	IAssetManagerEditorModule::Get().OpenSizeMapUI(TArray{Item->Path});
 
 	return FReply::Handled();
 }
@@ -120,7 +120,7 @@ void SDependencyAnalyserResultRow::CreateContextMenu(const FVector2D& MousePosit
 
 void SDependencyAnalyserResultRow::OpenSizeMap() const
 {
-	IAssetManagerEditorModule::Get().OpenSizeMapUI(TArray<FName>{Item->Path});
+	IAssetManagerEditorModule::Get().OpenSizeMapUI(TArray{Item->Path});
 }
 
 void SDependencyAnalyserResultRow::EditAsset() const
@@ -140,7 +140,7 @@ FText SDependencyAnalyserResultRow::GetSizeText(const SIZE_T SizeInBytes) const
 {
 	if (SizeInBytes < 1000)
 	{
-		return FText::AsMemory(SizeInBytes, EMemoryUnitStandard::SI);
+		return FText::AsMemory(SizeInBytes, SI);
 	}
 	else
 	{
@@ -149,6 +149,6 @@ FText SDependencyAnalyserResultRow::GetSizeText(const SIZE_T SizeInBytes) const
 		NumberFormattingOptions.MinimumFractionalDigits = 0;
 		NumberFormattingOptions.MinimumIntegralDigits = 1;
 
-		return FText::AsMemory(SizeInBytes, &NumberFormattingOptions, nullptr, EMemoryUnitStandard::SI);
+		return FText::AsMemory(SizeInBytes, &NumberFormattingOptions, nullptr, SI);
 	}
 }

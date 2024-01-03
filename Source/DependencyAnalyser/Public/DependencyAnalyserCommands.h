@@ -6,18 +6,17 @@
 #include "Framework/Commands/Commands.h"
 #include "DependencyAnalyserStyle.h"
 
-class FDependencyAnalyserCommands : public TCommands<FDependencyAnalyserCommands>
+class DEPENDENCYANALYSER_API FDependencyAnalyserCommands final : public TCommands<FDependencyAnalyserCommands>
 {
 public:
 
 	FDependencyAnalyserCommands()
-		: TCommands<FDependencyAnalyserCommands>(TEXT("Dependency Analyser"), NSLOCTEXT("Contexts", "Dependency Analyser", "DependencyAnalyser Plugin"), NAME_None, FDependencyAnalyserStyle::GetStyleSetName())
+		: TCommands(TEXT("Dependency Analyser"), NSLOCTEXT("Contexts", "Dependency Analyser", "DependencyAnalyser Plugin"), NAME_None, FDependencyAnalyserStyle::GetStyleSetName())
 	{
 	}
 
 	// TCommands<> interface
 	virtual void RegisterCommands() override;
 
-public:
-	TSharedPtr< FUICommandInfo > OpenPluginWindow;
+	TSharedPtr<FUICommandInfo> OpenPluginWindow;
 };

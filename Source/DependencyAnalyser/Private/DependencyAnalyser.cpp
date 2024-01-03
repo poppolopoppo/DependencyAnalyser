@@ -64,7 +64,7 @@ void FDependencyAnalyserModule::ShutdownModule()
 TSharedRef<SDockTab> FDependencyAnalyserModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
 {
 	return SNew(SDockTab)
-		.TabRole(ETabRole::NomadTab)
+		.TabRole(NomadTab)
 		[
 			SNew(SDependencyAnalyserWidget)
 		];
@@ -82,10 +82,8 @@ void FDependencyAnalyserModule::RegisterMenus()
 
 	{
 		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window.General.Miscellaneous");
-		{
-			FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
-			Section.AddMenuEntryWithCommandList(FDependencyAnalyserCommands::Get().OpenPluginWindow, PluginCommands);
-		}
+		FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
+		Section.AddMenuEntryWithCommandList(FDependencyAnalyserCommands::Get().OpenPluginWindow, PluginCommands);
 	}
 }
 

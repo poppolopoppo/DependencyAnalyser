@@ -230,16 +230,18 @@ FReply SDependencyAnalyserWidget::OnRun()
 {
 	const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 	TArray<FAssetData> Results = UDependencyFunctionLibrary::RunAssetAudit(AssetRegistryModule);
+	UDependencyFunctionLibrary::CachedDefaultWarningSize = FCString::Atoi(*WarningSize.Get()->GetText().ToString());
+	UDependencyFunctionLibrary::CachedDefaultErrorSize = FCString::Atoi(*ErrorSize.Get()->GetText().ToString());
 
 	LinesData.Empty();
 
-	int ErrorAssetsCount = 0;
-	int WarningAssetsCount = 0;
+	int32 ErrorAssetsCount = 0;
+	int32 WarningAssetsCount = 0;
 
 	FScopedSlowTask ExplorePathsTask(Results.Num(), FText::FromString("Running..."));
 	ExplorePathsTask.MakeDialog();
 
-	for (int i = 0; i < Results.Num(); i++)
+	for (int32 i = 0; i < Results.Num(); i++)
 	{
 		ExplorePathsTask.EnterProgressFrame();
 		
@@ -249,7 +251,7 @@ FReply SDependencyAnalyserWidget::OnRun()
 		}
 
 		FAssetData Result = Results[i];
-		const DependenciesData Dependencies = UDependencyFunctionLibrary::GetDependencies(
+		const FDependenciesData Dependencies = UDependencyFunctionLibrary::GetDependencies(
 			AssetRegistryModule,
 			Result.PackageName,
 			IncludeSoftRef->IsChecked(),
@@ -257,8 +259,7 @@ FReply SDependencyAnalyserWidget::OnRun()
 		FLineData Data = {Result.AssetName.ToString(), Dependencies.Amount, Dependencies.TotalSize, Result.GetClass(), Result.PackageName};
 		LinesData.Add(MakeShared<FLineData>(Data));
 
-		int32 Size;
-		if (UDependencyFunctionLibrary::IsErrorSize(Data.Class, Data.TotalSize, Size))
+		if (int32 Size; UDependencyFunctionLibrary::IsErrorSize(Data.Class, Data.TotalSize, Size))
 		{
 			ErrorAssetsCount++;
 		}
@@ -288,26 +289,26 @@ FReply SDependencyAnalyserWidget::OnExport()
 	TArray<FString> Lines;
 	for (auto Line : LinesData)
 	{
-		FString data = FString::Printf(TEXT("%s, %d, %d, %s, %s,"),
+		FString Data = FString::Printf(TEXT("%s, %d, %d, %s, %s,"),
 			ToCStr(Line.Get()->Name),
 			Line.Get()->DependenciesCount,
 			static_cast<int32>(Line.Get()->TotalSize),
 			ToCStr(Line.Get()->Class->GetName()),
 			ToCStr(Line.Get()->Path.ToString()));
-		Lines.Add(data);
+		Lines.Add(Data);
 	}
 
-	const FString path = L"DependencyAnalysis/DependencyAnalysisResults.csv";
-	bool success = FFileHelper::SaveStringArrayToFile(Lines, *path);
+	const FString Path = L"DependencyAnalysis/DependencyAnalysisResults.csv";
+	const bool bSuccess = FFileHelper::SaveStringArrayToFile(Lines, *Path);
 	
-	if (!success)
+	if (!bSuccess)
 	{
-		UE_LOG(LogDependencyAnalyser, Error, TEXT("Could not save file to %s"), *path);
+		UE_LOG(LogDependencyAnalyser, Error, TEXT("Could not save file to %s"), *Path);
 	}
 	else
 	{
-		UE_LOG(LogDependencyAnalyser, Warning, TEXT("Saved to %s"), *path);
-		FWindowsPlatformProcess::ExploreFolder(*path);
+		UE_LOG(LogDependencyAnalyser, Warning, TEXT("Saved to %s"), *Path);
+		FWindowsPlatformProcess::ExploreFolder(*Path);
 	}
 	
 	return FReply::Handled();
@@ -358,14 +359,14 @@ void SDependencyAnalyserWidget::RefreshResults()
 	}
 }
 
-void SDependencyAnalyserWidget::GenerateResultText(int TotalAssetsCount, int ErrorAssetsCount, int WarningAssetsCount)
+void SDependencyAnalyserWidget::GenerateResultText(const int32 TotalAssetsCount, const int32 ErrorAssetsCount, const int32 WarningAssetsCount)
 {
-	const FString resultStr = FString::Printf(TEXT("There are %d assets larger than their maximum size and %d assets larger than their recommended size, out of a total of %d assets."),
+	const FString ResultStr = FString::Printf(TEXT("There are %d assets larger than their maximum size and %d assets larger than their recommended size, out of a total of %d assets."),
 		ErrorAssetsCount,
 		WarningAssetsCount,
 		TotalAssetsCount);
 
-	ResultsTextBlock.Get()->SetText(FText::FromString(resultStr));
+	ResultsTextBlock.Get()->SetText(FText::FromString(ResultStr));
 }
 
 bool SDependencyAnalyserWidget::DoesPassFilter(const TSharedPtr<FLineData, ESPMode::ThreadSafe>& LineData)

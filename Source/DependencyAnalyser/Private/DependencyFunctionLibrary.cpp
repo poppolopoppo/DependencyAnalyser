@@ -14,10 +14,10 @@ TArray<FAssetData> UDependencyFunctionLibrary::RunAssetAudit(const FAssetRegistr
 	return AssetData;
 }
 
-DependenciesData UDependencyFunctionLibrary::GetDependencies(const FAssetRegistryModule& AssetRegistryModule,
-	FName PackageName, bool IncludeSoftReferences, bool IgnoreDevFolders)
+FDependenciesData UDependencyFunctionLibrary::GetDependencies(const FAssetRegistryModule& AssetRegistryModule,
+	const FName PackageName, const bool IncludeSoftReferences, const bool IgnoreDevFolders)
 {
-	DependenciesData Data = {0, 0};
+	FDependenciesData Data = {0, 0};
 	TArray<FName> Dependencies;
 
 	GetDependenciesRecursive(AssetRegistryModule, PackageName, UE::AssetRegistry::EDependencyQuery::Hard, IgnoreDevFolders, Dependencies);
@@ -27,12 +27,12 @@ DependenciesData UDependencyFunctionLibrary::GetDependencies(const FAssetRegistr
 		GetDependenciesRecursive(AssetRegistryModule, PackageName, UE::AssetRegistry::EDependencyQuery::Soft, IgnoreDevFolders, Dependencies);
 	}
 	
-	for (const FName& dependency : Dependencies)
+	for (const FName& Dependency : Dependencies)
 	{
-		const TOptional<FAssetPackageData> pckgData = AssetRegistryModule.Get().GetAssetPackageDataCopy(dependency);
+		const TOptional<FAssetPackageData> PackageData = AssetRegistryModule.Get().GetAssetPackageDataCopy(Dependency);
 		
 		Data.Amount++;
-		Data.TotalSize += pckgData->DiskSize;
+		Data.TotalSize += PackageData->DiskSize;
 	}
 	
 	return Data;
@@ -42,7 +42,7 @@ void UDependencyFunctionLibrary::CacheConfig()
 {
 	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("DefaultWarningSizeInMB"), CachedDefaultWarningSize, GEngineIni);
 	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("DefaultErrorSizeInMB"), CachedDefaultErrorSize, GEngineIni);
-	GConfig->GetBool(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("bFailForWarnings"), CachedFailForWarnings, GEngineIni);
+	GConfig->GetBool(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("bFailForWarnings"), bCachedFailForWarnings, GEngineIni);
 
 	FString SingleStringFromConfig;
 	TArray<FString> ExtensionTypes;
@@ -82,30 +82,30 @@ void UDependencyFunctionLibrary::CacheConfig()
 	}
 }
 
-bool UDependencyFunctionLibrary::IsWarningSize(const UClass* Class, const SIZE_T Size, int32& WarningSize)
+bool UDependencyFunctionLibrary::IsWarningSize(const UClass* Class, const SIZE_T Size, int32& OutWarningSize)
 {
-	WarningSize = CachedDefaultWarningSize;
+	OutWarningSize = CachedDefaultWarningSize;
 	if (CachedWarningSizePerType.Contains(Class))
 	{
-		WarningSize = CachedWarningSizePerType.FindChecked(Class);
+		OutWarningSize = CachedWarningSizePerType.FindChecked(Class);
 	}
 		
-	return IsOverMBSize(Size, WarningSize);
+	return IsOverMBSize(Size, OutWarningSize);
 }
 
-bool UDependencyFunctionLibrary::IsErrorSize(const UClass* Class, const SIZE_T Size, int32& ErrorSize)
+bool UDependencyFunctionLibrary::IsErrorSize(const UClass* Class, const SIZE_T Size, int32& OutErrorSize)
 {
-	ErrorSize = CachedDefaultErrorSize;
+	OutErrorSize = CachedDefaultErrorSize;
 	if (CachedErrorSizePerType.Contains(Class))
 	{
-		ErrorSize = CachedErrorSizePerType.FindChecked(Class);
+		OutErrorSize = CachedErrorSizePerType.FindChecked(Class);
 	}
 		
-	return IsOverMBSize(Size, ErrorSize);
+	return IsOverMBSize(Size, OutErrorSize);
 }
 
 void UDependencyFunctionLibrary::GetDependenciesRecursive(const FAssetRegistryModule& AssetRegistryModule,
-                                                          FName PackageName, UE::AssetRegistry::EDependencyQuery QueryType, bool IgnoreDevFolders, TArray<FName>& Dependencies)
+                                                          const FName PackageName, const UE::AssetRegistry::EDependencyQuery QueryType, const bool IgnoreDevFolders, TArray<FName>& OutDependencies)
 {
 	TArray<FName> Subdependencies;
 	AssetRegistryModule.Get().GetDependencies(PackageName, Subdependencies,
@@ -118,7 +118,7 @@ void UDependencyFunctionLibrary::GetDependenciesRecursive(const FAssetRegistryMo
 			continue;
 		}
 		
-		if (Dependencies.Contains(Subdependency))
+		if (OutDependencies.Contains(Subdependency))
 		{
 			continue;
 		}
@@ -128,13 +128,13 @@ void UDependencyFunctionLibrary::GetDependenciesRecursive(const FAssetRegistryMo
 			continue;
 		}
 
-		Dependencies.Add(FName(Subdependency));
+		OutDependencies.Add(FName(Subdependency));
 
-		GetDependenciesRecursive(AssetRegistryModule, Dependencies.Last(), QueryType, IgnoreDevFolders, Dependencies);
+		GetDependenciesRecursive(AssetRegistryModule, OutDependencies.Last(), QueryType, IgnoreDevFolders, OutDependencies);
 	}
 }
 
-bool UDependencyFunctionLibrary::IsOverMBSize(const SIZE_T Size, int32 SizeMB)
+bool UDependencyFunctionLibrary::IsOverMBSize(const SIZE_T Size, const int32 SizeMB)
 {
 	return Size >= SizeMB * 1000000;
 }

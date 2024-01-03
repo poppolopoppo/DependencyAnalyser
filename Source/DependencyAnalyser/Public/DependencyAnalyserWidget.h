@@ -7,6 +7,7 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogDependencyAnalyser, All, All);
 
+// Data for each result row of an analysis
 struct DEPENDENCYANALYSER_API FLineData
 {
 	FString Name;
@@ -16,9 +17,11 @@ struct DEPENDENCYANALYSER_API FLineData
 	FName Path;
 };
 
-class DEPENDENCYANALYSER_API SDependencyAnalyserWidget : public SCompoundWidget
+/* Manages the behaviour of the dependency analysis widget when responding to user input */
+class DEPENDENCYANALYSER_API SDependencyAnalyserWidget final : public SCompoundWidget
 {
 public:
+	
 	SLATE_BEGIN_ARGS(SDependencyAnalyserWidget) {}
 	SLATE_END_ARGS()
 
@@ -28,21 +31,33 @@ public:
 	static FName Name_Type;
 	static FName Name_Path;
 
-	void LoadSettings();
 	void Construct(const FArguments& InArgs);
 
 private:
+
+	// Called when an analysis is run
 	FReply OnRun();
+
+	// Called when a request to export analysis results is made
 	FReply OnExport();
+
+	// Flushes and repopulates result lines
 	void RefreshResults();
-	void GenerateResultText(int TotalAssetsCount, int ErrorAssetsCount, int WarningAssetsCount);
+
+	// Generates textual overview of results of an analysis
+	void GenerateResultText(const int32 TotalAssetsCount, const int32 ErrorAssetsCount, const int32 WarningAssetsCount);
+
+	// Handle behaviour of search box input
 	void OnSearchBoxChanged(const FText& InSearchText);
 	void OnSearchBoxCommitted(const FText& InSearchText, ETextCommit::Type CommitInfo);
+	bool DoesPassFilter(const TSharedPtr<FLineData, ESPMode::ThreadSafe>& LineData);
+	FText Filter;
+
+	// Sorts results based on user header selection
 	void OnSortColumnHeader(const EColumnSortPriority::Type SortPriority, const FName& ColumnName, const EColumnSortMode::Type NewSortMode);
 
-	bool DoesPassFilter(const TSharedPtr<FLineData, ESPMode::ThreadSafe>& LineData);
-	
-	TSharedRef<ITableRow> OnGenerateLine(TSharedPtr<FLineData> Item, const TSharedRef<STableViewBase> &MyTable);
+	// Handles generation of each line of results
+	TSharedRef<ITableRow> OnGenerateLine(TSharedPtr<FLineData> Item, const TSharedRef<STableViewBase> &Table);
 
 	TSharedPtr<SCheckBox> IncludeSoftRef;
 	TSharedPtr<SCheckBox> IgnoreDevFolders;
@@ -53,6 +68,4 @@ private:
 	TSharedPtr<SListView<TSharedPtr<FLineData>>> ListView;
 	TArray<TSharedPtr<FLineData>> LinesData;
 	TArray<TSharedPtr<FLineData>> LastRunResult;
-
-	FText Filter;
 };
