@@ -2,7 +2,7 @@
 
 #include "DependencyAnalyser.h"
 
-#include "DependencySizeTestSettings.h"
+#include "DependencyAnalyserTestSettings.h"
 #include "ISettingsModule.h"
 #include "DependencyAnalyserCommands.h"
 #include "DependencyAnalyserWidget.h"
@@ -41,7 +41,7 @@ void FDependencyAnalyserModule::StartupModule()
 		SettingsModule->RegisterSettings("Editor", "Advanced", "Dependency Analyser",
 			LOCTEXT("DependencyAnalyserName", "Dependency Analyser"),
 			LOCTEXT("DependencyAnalyserDescription", "Manage Dependency Analyser settings."),
-			GetMutableDefault<UDependencySizeTestSettings>());
+			GetMutableDefault<UDependencyAnalyserTestSettings>());
 	}
 }
 

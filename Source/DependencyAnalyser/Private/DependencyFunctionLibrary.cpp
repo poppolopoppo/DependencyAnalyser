@@ -40,14 +40,16 @@ FDependenciesData UDependencyFunctionLibrary::GetDependencies(const FAssetRegist
 
 void UDependencyFunctionLibrary::CacheConfig()
 {
-	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("DefaultWarningSizeInMB"), CachedDefaultWarningSize, GEngineIni);
-	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("DefaultErrorSizeInMB"), CachedDefaultErrorSize, GEngineIni);
-	GConfig->GetBool(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("bFailForWarnings"), bCachedFailForWarnings, GEngineIni);
+	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("DefaultWarningSizeInMB"), CachedDefaultWarningSize, GEngineIni);
+	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("DefaultErrorSizeInMB"), CachedDefaultErrorSize, GEngineIni);
+	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("DefaultWarningReferenceCount"), CachedDefaultWarningCount, GEngineIni);
+	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("DefaultErrorReferenceCount"), CachedDefaultErrorCount, GEngineIni);
+	GConfig->GetBool(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("bFailForWarnings"), bCachedFailForWarnings, GEngineIni);
 
 	FString SingleStringFromConfig;
 	TArray<FString> ExtensionTypes;
 
-	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("WarningSizePerExtensionType"), SingleStringFromConfig, GEngineIni);
+	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("WarningSizePerAssetType"), SingleStringFromConfig, GEngineIni);
 	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
 	
 	for (const FString& Type : ExtensionTypes)
@@ -64,7 +66,7 @@ void UDependencyFunctionLibrary::CacheConfig()
 		}
 	}
 
-	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencySizeTestSettings"), TEXT("ErrorSizePerExtensionType"), SingleStringFromConfig, GEngineIni);
+	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("ErrorSizePerAssetType"), SingleStringFromConfig, GEngineIni);
 	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
 	
 	for (const FString& Type : ExtensionTypes)
@@ -80,6 +82,40 @@ void UDependencyFunctionLibrary::CacheConfig()
 			CachedErrorSizePerType.Add(ParsedClass, ParsedSize);
 		}
 	}
+
+	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("WarningReferenceCountPerAssetType"), SingleStringFromConfig, GEngineIni);
+	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
+	
+	for (const FString& Type : ExtensionTypes)
+	{
+		FString ClassStr, CountStr, PackageStr, NameStr;
+		Type.Split(TEXT(", "), &ClassStr, &CountStr);
+		ClassStr.Split(TEXT("\'\""), &PackageStr, &NameStr);
+		NameStr.RemoveFromEnd(TEXT("\"\'"));
+
+		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *NameStr))
+		{
+			int32 ParsedCount = FCString::Atoi(*CountStr);
+			CachedWarningCountPerType.Add(ParsedClass, ParsedCount);
+		}
+	}
+
+	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("ErrorReferenceCountPerAssetType"), SingleStringFromConfig, GEngineIni);
+	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
+	
+	for (const FString& Type : ExtensionTypes)
+	{
+		FString ClassStr, CountStr, PackageStr, NameStr;
+		Type.Split(TEXT(", "), &ClassStr, &CountStr);
+		ClassStr.Split(TEXT("\'\""), &PackageStr, &NameStr);
+		NameStr.RemoveFromEnd(TEXT("\"\'"));
+
+		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *NameStr))
+		{
+			int32 ParsedCount = FCString::Atoi(*CountStr);
+			CachedErrorCountPerType.Add(ParsedClass, ParsedCount);
+		}
+	}
 }
 
 bool UDependencyFunctionLibrary::IsWarningSize(const UClass* Class, const SIZE_T Size, int32& OutWarningSize)
@@ -93,6 +129,17 @@ bool UDependencyFunctionLibrary::IsWarningSize(const UClass* Class, const SIZE_T
 	return IsOverMBSize(Size, OutWarningSize);
 }
 
+bool UDependencyFunctionLibrary::IsWarningCount(const UClass* Class, const int32 Count, int32& OutWarningCount)
+{
+	OutWarningCount = CachedDefaultWarningCount;
+	if (CachedWarningCountPerType.Contains(Class))
+	{
+		OutWarningCount = CachedWarningCountPerType.FindChecked(Class);
+	}
+		
+	return IsOverMBSize(Count, OutWarningCount);
+}
+
 bool UDependencyFunctionLibrary::IsErrorSize(const UClass* Class, const SIZE_T Size, int32& OutErrorSize)
 {
 	OutErrorSize = CachedDefaultErrorSize;
@@ -102,6 +149,17 @@ bool UDependencyFunctionLibrary::IsErrorSize(const UClass* Class, const SIZE_T S
 	}
 		
 	return IsOverMBSize(Size, OutErrorSize);
+}
+
+bool UDependencyFunctionLibrary::IsErrorCount(const UClass* Class, const int32 Count, int32& OutErrorCount)
+{
+	OutErrorCount = CachedDefaultErrorCount;
+	if (CachedErrorCountPerType.Contains(Class))
+	{
+		OutErrorCount = CachedErrorCountPerType.FindChecked(Class);
+	}
+		
+	return IsOverMBSize(Count, OutErrorCount);
 }
 
 void UDependencyFunctionLibrary::GetDependenciesRecursive(const FAssetRegistryModule& AssetRegistryModule,

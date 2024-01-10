@@ -298,7 +298,7 @@ FReply SDependencyAnalyserWidget::OnExport()
 		Lines.Add(Data);
 	}
 
-	const FString Path = L"DependencyAnalysis/DependencyAnalysisResults.csv";
+	const FString Path = FString::Printf(TEXT("DependencyAnalysis/DependencyAnalysisResults_%s.csv"), *FDateTime::Now().ToString(TEXT("%Y%m%d-%H%M%S")));
 	const bool bSuccess = FFileHelper::SaveStringArrayToFile(Lines, *Path);
 	
 	if (!bSuccess)

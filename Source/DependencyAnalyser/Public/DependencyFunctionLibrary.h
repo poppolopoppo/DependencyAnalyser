@@ -28,15 +28,19 @@ public:
 	static FDependenciesData GetDependencies(const FAssetRegistryModule& AssetRegistryModule, const FName PackageName,
 		const bool IncludeSoftReferences, const bool IgnoreDevFolders);
 
-	// Inform about whether an asset is over a specified size
+	// Inform about whether an asset is over a specified size or ref count
 	static bool IsWarningSize(const UClass* Class, const SIZE_T Size, int32& OutWarningSize);
+	static bool IsWarningCount(const UClass* Class, const int32 Count, int32& OutWarningCount);
 	static bool IsErrorSize(const UClass* Class, const SIZE_T Size, int32& OutErrorSize);
+	static bool IsErrorCount(const UClass* Class, const int32 Count, int32& OutErrorCount);
 	static bool IsOverMBSize(const SIZE_T Size, const int32 SizeMB);
 
 	// Retrieval and caching of config data
 	static void CacheConfig();
 	inline static int32 CachedDefaultWarningSize = 50;
 	inline static int32 CachedDefaultErrorSize = 500;
+	inline static int32 CachedDefaultWarningCount = 10;
+	inline static int32 CachedDefaultErrorCount = 100;
 	inline static bool bCachedFailForWarnings;
 
 private:
@@ -48,4 +52,6 @@ private:
 	// Retrieved and cached config data
 	inline static TMap<UClass*, int32> CachedWarningSizePerType;
 	inline static TMap<UClass*, int32> CachedErrorSizePerType;
+	inline static TMap<UClass*, int32> CachedWarningCountPerType;
+	inline static TMap<UClass*, int32> CachedErrorCountPerType;
 };
