@@ -61,7 +61,7 @@ The Dependency Analyser Tool comprises of the following features:
 ### Dependency Analyser Test Suite
 If the project has the [Functional Testing Editor plugin enabled](https://docs.unrealengine.com/5.3/en-US/automation-system-in-unreal-engine/#automationtestsmovedtoplugins), the Dependency Analyser offers a test suite to run a dependency analysis on all assets. The test is executed per-asset, so individual sizes of asset for each failing test can be identified.
 
-![test_tool](https://github.com/YAGER-Development/DependencyAnalyser/assets/17513294/fb48a324-5462-45c5-8589-c5f9ebaf4c7d)
+![test_tool](https://github.com/YAGER-Development/DependencyAnalyser/assets/17513294/4311e056-ea7f-42db-a314-266b71c273e8)
 
 The results can be visualised by:
 * Selecting the parent `DependencyAnalyser` test, for an overview of the duration and success/failure/warning rate
@@ -74,7 +74,7 @@ The results can be visualised by:
 
 Users can customise error and warning sizes (both defaults and per asset type), and whether warnings should fail a test or not. These values can be customised by navigating to `Edit > Editor Preferences > Advanced > Dependency Analyser` and modifying the default values (or `Type Limits` for a higher degree of control), and `Fail for Warnings`.
 
-![settings](https://github.com/YAGER-Development/DependencyAnalyser/assets/17513294/805c707d-932f-4d6b-887f-186e82226156)
+![settings](https://github.com/YAGER-Development/DependencyAnalyser/assets/17513294/5f06b340-5139-4c55-ae3e-004fea6b57e1)
 
 ## Contributions
 All rights to this plugin belong to YAGER. To contribute to the development of this plugin, feel free to open a [Pull Request](https://github.com/YAGER-Development/DependencyAnalyser/pulls). If you want to actively be part of what we are developing at YAGER, check out and apply to any relevant open positions on our [YAGER website](https://www.yager.de/).
