@@ -1,0 +1,12 @@
+// Copyright 2024 YAGER Development GmbH All Rights Reserved.
+
+#include "DependencyAnalyserCommands.h"
+
+#define LOCTEXT_NAMESPACE "FDependencyAnalyserModule"
+
+void FDependencyAnalyserCommands::RegisterCommands()
+{
+	UI_COMMAND(OpenPluginWindow, "Dependency Analyser", "Bring up Dependency Analyser window", EUserInterfaceActionType::Button, FInputGesture());
+}
+
+#undef LOCTEXT_NAMESPACE
