@@ -22,7 +22,7 @@ Dependency chains are created by assets referencing other assets, and represent 
 This plugin simplifies the identification of asset dependencies by pointing a spotlight on their reference count and dependency chain size. It is an ideal tool to integrate into the testing framework and build pipeline of a project. Whilst dependency analysis can be carried out at any point during the development of a project, it is most efficient when performed regularly from the start, therefore an early integration is recommended.
 
 ### Specifications
-Dependency Analyser plugin version 1.0. Tested with Unreal Engine version 5.1.1.
+Dependency Analyser plugin version 1.0. Compatibility tested with Unreal Engine version 5.3.2 and 5.1.1.
 
 ### Usage instructions
 To use the Dependency Analyser plugin:
