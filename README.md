@@ -63,12 +63,20 @@ If the project has the [Functional Testing Editor plugin enabled](https://docs.u
 
 ![test_tool](https://github.com/YAGER-Development/DependencyAnalyser/assets/17513294/4311e056-ea7f-42db-a314-266b71c273e8)
 
-The results can be visualised by:
+The tests can be ran both via the Unreal editor and the console.
+
+When running them via the editor, the results can be visualised by:
 * Selecting the parent `DependencyAnalyser` test, for an overview of the duration and success/failure/warning rate
 * Selecting the individual per-asset test, to visualise information about failure reason and asset size or reference count
 * Inspecting the Message Logs, for an overview of failure reasons and asset sizes or reference counts of all assets for which a test ran
 
 ![test_log](https://github.com/YAGER-Development/DependencyAnalyser/assets/17513294/8e40af64-bcc3-427c-b47e-e2aab4d79d95)
+
+To run the tests via console command, you can use:
+
+`[PathTo]\UnrealEditor-Cmd.exe [PathTo]\[ProjectName].uproject Params=[LevelName] -ExecCmds=\"Automation RunTests Filter:DependencyAnalyser.[TestName];quit\" -nullrhi -nosound -nosplash -unattended -buildmachine -editortest -stdout`
+
+where [TestName] is either DependencyCountTest or DependencySizeTest. The results can be inspected through the console.
 
 ### Dependency Analyser Settings
 
