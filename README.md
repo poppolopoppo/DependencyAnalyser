@@ -82,7 +82,7 @@ where [TestName] is either DependencyCountTest or DependencySizeTest. The result
 
 Users can customise error and warning sizes (both defaults and per asset type), and whether warnings should fail a test or not. These values can be customised by navigating to `Edit > Editor Preferences > Advanced > Dependency Analyser` and modifying the default values (or `Type Limits` for a higher degree of control), and `Fail for Warnings`.
 
-![settings](https://github.com/YAGER-Development/DependencyAnalyser/assets/17513294/5f06b340-5139-4c55-ae3e-004fea6b57e1)
+![settings](https://github.com/YAGER-Development/DependencyAnalyser/assets/17513294/50443211-0899-42a7-b971-05a20eb79cd5)
 
 ## Contributions
 All rights to this plugin belong to YAGER. To contribute to the development of this plugin, feel free to open a [Pull Request](https://github.com/YAGER-Development/DependencyAnalyser/pulls). If you want to actively be part of what we are developing at YAGER, check out and apply to any relevant open positions on our [YAGER website](https://www.yager.de/).
