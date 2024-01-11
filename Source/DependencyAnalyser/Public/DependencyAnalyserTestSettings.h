@@ -7,6 +7,19 @@
 #include "UObject/Object.h"
 #include "DependencyAnalyserTestSettings.generated.h"
 
+USTRUCT()
+struct DEPENDENCYANALYSER_API FAssetLimit
+{
+	GENERATED_BODY()
+
+	// Dependencies size limit in MB
+	UPROPERTY(EditAnywhere)
+	int32 SizeLimit;
+	// Dependencies reference count
+	UPROPERTY(EditAnywhere)
+	int32 ReferenceCountLimit;
+};
+
 /* Configuration variables to customise plugin behaviour */
 UCLASS(config=Engine, defaultconfig)
 class DEPENDENCYANALYSER_API UDependencyAnalyserTestSettings : public UObject
@@ -31,21 +44,13 @@ public:
 	UPROPERTY(EditAnywhere, config, Category="Default Values")
 	int32 DefaultErrorReferenceCount = 100;
 
-	// A list of warning sizes per asset type that will be used instead of default
+	// A list of warning sizes and reference counts per asset type that will be used instead of default
 	UPROPERTY(EditAnywhere, config, Category="Type Limits")
-	TMap<UClass*, int32> WarningSizePerAssetType;
+	TMap<UClass*, FAssetLimit> WarningLimitsPerAssetType;
 	
-	// A list of error sizes per asset type that will be used instead of default 
+	// A list of error sizes and reference counts per asset type that will be used instead of default 
 	UPROPERTY(EditAnywhere, config, Category="Type Limits")
-	TMap<UClass*, int32> ErrorSizePerAssetType;
-	
-	// A list of warning reference counts per asset type that will be used instead of default
-	UPROPERTY(EditAnywhere, config, Category="Type Limits")
-	TMap<UClass*, int32> WarningReferenceCountPerAssetType;
-	
-	// A list of error reference counts per asset type that will be used instead of default 
-	UPROPERTY(EditAnywhere, config, Category="Type Limits")
-	TMap<UClass*, int32> ErrorReferenceCountPerAssetType;
+	TMap<UClass*, FAssetLimit> ErrorLimitsPerAssetType;
 	
 	// Whether a test should fail in case a warning is thrown
 	UPROPERTY(EditAnywhere, config, Category="Automated Testing")

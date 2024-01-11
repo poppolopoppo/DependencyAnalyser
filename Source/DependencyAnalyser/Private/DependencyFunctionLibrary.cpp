@@ -49,69 +49,45 @@ void UDependencyFunctionLibrary::CacheConfig()
 	FString SingleStringFromConfig;
 	TArray<FString> ExtensionTypes;
 
-	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("WarningSizePerAssetType"), SingleStringFromConfig, GEngineIni);
+	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("WarningLimitsPerAssetType"), SingleStringFromConfig, GEngineIni);
 	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
 	
 	for (const FString& Type : ExtensionTypes)
 	{
-		FString ClassStr, SizeStr, PackageStr, NameStr;
-		Type.Split(TEXT(", "), &ClassStr, &SizeStr);
+		FString ClassStr, DepStr, PackageStr, NameStr, SizeStr, CountStr;
+		Type.Split(TEXT(", "), &ClassStr, &DepStr);
 		ClassStr.Split(TEXT("\'\""), &PackageStr, &NameStr);
 		NameStr.RemoveFromEnd(TEXT("\"\'"));
+		DepStr.Split(TEXT(","), &SizeStr, &CountStr);
+		SizeStr.ReplaceInline(TEXT("(SizeLimit="), TEXT(""));
+		CountStr.ReplaceInline(TEXT("ReferenceCountLimit="), TEXT(""));
 
 		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *NameStr))
 		{
 			int32 ParsedSize = FCString::Atoi(*SizeStr);
 			CachedWarningSizePerType.Add(ParsedClass, ParsedSize);
-		}
-	}
-
-	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("ErrorSizePerAssetType"), SingleStringFromConfig, GEngineIni);
-	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
-	
-	for (const FString& Type : ExtensionTypes)
-	{
-		FString ClassStr, SizeStr, PackageStr, NameStr;
-		Type.Split(TEXT(", "), &ClassStr, &SizeStr);
-		ClassStr.Split(TEXT("\'\""), &PackageStr, &NameStr);
-		NameStr.RemoveFromEnd(TEXT("\"\'"));
-
-		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *NameStr))
-		{
-			int32 ParsedSize = FCString::Atoi(*SizeStr);
-			CachedErrorSizePerType.Add(ParsedClass, ParsedSize);
-		}
-	}
-
-	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("WarningReferenceCountPerAssetType"), SingleStringFromConfig, GEngineIni);
-	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
-	
-	for (const FString& Type : ExtensionTypes)
-	{
-		FString ClassStr, CountStr, PackageStr, NameStr;
-		Type.Split(TEXT(", "), &ClassStr, &CountStr);
-		ClassStr.Split(TEXT("\'\""), &PackageStr, &NameStr);
-		NameStr.RemoveFromEnd(TEXT("\"\'"));
-
-		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *NameStr))
-		{
 			int32 ParsedCount = FCString::Atoi(*CountStr);
 			CachedWarningCountPerType.Add(ParsedClass, ParsedCount);
 		}
 	}
 
-	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("ErrorReferenceCountPerAssetType"), SingleStringFromConfig, GEngineIni);
+	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("ErrorLimitsPerAssetType"), SingleStringFromConfig, GEngineIni);
 	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
 	
 	for (const FString& Type : ExtensionTypes)
 	{
-		FString ClassStr, CountStr, PackageStr, NameStr;
-		Type.Split(TEXT(", "), &ClassStr, &CountStr);
+		FString ClassStr, DepStr, PackageStr, NameStr, SizeStr, CountStr;
+		Type.Split(TEXT(", "), &ClassStr, &DepStr);
 		ClassStr.Split(TEXT("\'\""), &PackageStr, &NameStr);
 		NameStr.RemoveFromEnd(TEXT("\"\'"));
+		DepStr.Split(TEXT(","), &SizeStr, &CountStr);
+		SizeStr.ReplaceInline(TEXT("(SizeLimit="), TEXT(""));
+		CountStr.ReplaceInline(TEXT("ReferenceCountLimit="), TEXT(""));
 
 		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *NameStr))
 		{
+			int32 ParsedSize = FCString::Atoi(*SizeStr);
+			CachedErrorSizePerType.Add(ParsedClass, ParsedSize);
 			int32 ParsedCount = FCString::Atoi(*CountStr);
 			CachedErrorCountPerType.Add(ParsedClass, ParsedCount);
 		}
