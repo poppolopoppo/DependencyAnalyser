@@ -14,10 +14,10 @@ struct DEPENDENCYANALYSER_API FAssetLimit
 
 	// Dependencies size limit in MB
 	UPROPERTY(EditAnywhere)
-	int32 SizeLimit;
+	int32 SizeLimit = 0;
 	// Dependencies reference count
 	UPROPERTY(EditAnywhere)
-	int32 ReferenceCountLimit;
+	int32 ReferenceCountLimit = 0;
 };
 
 /* Configuration variables to customise plugin behaviour */
