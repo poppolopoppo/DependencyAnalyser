@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Framework/Commands/UICommandList.h"
 #include "Modules/ModuleManager.h"
+#include "Widgets/Docking/SDockTab.h"
 
 class FToolBarBuilder;
 class FMenuBuilder;

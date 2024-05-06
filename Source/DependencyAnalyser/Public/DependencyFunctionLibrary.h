@@ -10,7 +10,8 @@
 struct DEPENDENCYANALYSER_API FDependenciesData
 {
 	int32 Amount;
-	SIZE_T TotalSize;
+	SIZE_T DiskSize;
+	SIZE_T MemorySize;
 };
 
 /* Public function library to be used by editor tool and test suite */
@@ -25,13 +26,15 @@ public:
 	static TArray<FAssetData> RunAssetAudit(const FAssetRegistryModule& AssetRegistryModule);
 
 	// Collects and returns dependencies from an internal recursive call
-	static FDependenciesData GetDependencies(const FAssetRegistryModule& AssetRegistryModule, const FName PackageName,
+	static FDependenciesData GetDependencies(const FAssetRegistryModule& AssetRegistryModule, const FAssetData& AssetData,
 		const bool IncludeSoftReferences, const bool IgnoreDevFolders);
 
 	// Inform about whether an asset is over a specified size or ref count
-	static bool IsWarningSize(const UClass* Class, const SIZE_T Size, int32& OutWarningSize);
+	static bool IsWarningDiskSize(const UClass* Class, const SIZE_T Size, int32& OutWarningSize);
+	static bool IsWarningMemorySize(const UClass* Class, const SIZE_T Size, int32& OutWarningSize);
 	static bool IsWarningCount(const UClass* Class, const int32 Count, int32& OutWarningCount);
-	static bool IsErrorSize(const UClass* Class, const SIZE_T Size, int32& OutErrorSize);
+	static bool IsErrorDiskSize(const UClass* Class, const SIZE_T Size, int32& OutErrorSize);
+	static bool IsErrorMemorySize(const UClass* Class, const SIZE_T Size, int32& OutErrorSize);
 	static bool IsErrorCount(const UClass* Class, const int32 Count, int32& OutErrorCount);
 	static bool IsOverMBSize(const SIZE_T Size, const int32 SizeMB);
 
@@ -42,6 +45,7 @@ public:
 	inline static int32 CachedDefaultWarningCount = 10;
 	inline static int32 CachedDefaultErrorCount = 100;
 	inline static bool bCachedFailForWarnings;
+	inline static bool bEnableMemorySizeCalculation;
 
 private:
 	
@@ -50,8 +54,10 @@ private:
 		const UE::AssetRegistry::EDependencyQuery QueryType, const bool IgnoreDevFolders, TArray<FName>& OutDependencies);
 
 	// Retrieved and cached config data
-	inline static TMap<UClass*, int32> CachedWarningSizePerType;
-	inline static TMap<UClass*, int32> CachedErrorSizePerType;
+	inline static TMap<UClass*, int32> CachedWarningDiskSizePerType;
+	inline static TMap<UClass*, int32> CachedErrorDiskSizePerType;
+	inline static TMap<UClass*, int32> CachedWarningMemorySizePerType;
+	inline static TMap<UClass*, int32> CachedErrorMemorySizePerType;
 	inline static TMap<UClass*, int32> CachedWarningCountPerType;
 	inline static TMap<UClass*, int32> CachedErrorCountPerType;
 };

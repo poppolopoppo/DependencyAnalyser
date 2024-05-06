@@ -12,9 +12,12 @@ struct DEPENDENCYANALYSER_API FAssetLimit
 {
 	GENERATED_BODY()
 
-	// Dependencies size limit in MB
+	// Dependencies disk size limit in MB
 	UPROPERTY(EditAnywhere)
-	int32 SizeLimit = 0;
+	int32 DiskSizeLimit = 0;
+	// Dependencies memory size limit in MB
+	UPROPERTY(EditAnywhere)
+	int32 MemorySizeLimit = 0;
 	// Dependencies reference count
 	UPROPERTY(EditAnywhere)
 	int32 ReferenceCountLimit = 0;
@@ -27,6 +30,8 @@ class DEPENDENCYANALYSER_API UDependencyAnalyserTestSettings : public UObject
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditAnywhere, config, Category="Settings")
+	bool bEnableMemorySizeCalculation = false;
 	
 	// Default size at which an asset throws a warning
 	UPROPERTY(EditAnywhere, config, Category="Default Values")

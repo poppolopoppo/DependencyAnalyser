@@ -5,8 +5,11 @@
 #include "DependencyAnalyserResultRow.h"
 #include "DependencyFunctionLibrary.h"
 #include "SlateOptMacros.h"
+#include "AssetRegistry/AssetData.h"
+#include "Engine/Blueprint.h"
 #include "Misc/FileHelper.h"
 #include "Misc/ScopedSlowTask.h"
+#include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SSearchBox.h"
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
@@ -15,7 +18,8 @@ DEFINE_LOG_CATEGORY(LogDependencyAnalyser);
 
 FName SDependencyAnalyserWidget::Name_Name(TEXT("Name"));
 FName SDependencyAnalyserWidget::Name_DependenciesCount(TEXT("Dependencies Count"));
-FName SDependencyAnalyserWidget::Name_TotalSize(TEXT("Total Size"));
+FName SDependencyAnalyserWidget::Name_DiskSize(TEXT("Disk Size"));
+FName SDependencyAnalyserWidget::Name_MemorySize(TEXT("Memory Size"));
 FName SDependencyAnalyserWidget::Name_Type(TEXT("Type"));
 FName SDependencyAnalyserWidget::Name_Path(TEXT("Path"));
 
@@ -77,6 +81,46 @@ void SDependencyAnalyserWidget::Construct(const FArguments& InArgs)
 					SNew(STextBlock)
 					.Text(FText::FromString("Ignore Dev Folders"))
 					.ToolTipText(FText::FromString("When counting dependencies and listing assets, ignore dev folders"))
+				]
+
+				+ SHorizontalBox::Slot()
+				.VAlign(VAlign_Center)
+				.HAlign(HAlign_Left)
+				.AutoWidth()
+				.Padding(5, 0, 0, 0)
+				[
+					SAssignNew(IgnoreExternalActors, SCheckBox)
+					.IsChecked(true)
+				]
+
+				+ SHorizontalBox::Slot()
+				.VAlign(VAlign_Center)
+				.HAlign(HAlign_Left)
+				.AutoWidth()
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString("Ignore ExternalActors"))
+					.ToolTipText(FText::FromString("When counting dependencies and listing assets, ignore ExternalActors folders"))
+				]
+
+				+ SHorizontalBox::Slot()
+				.VAlign(VAlign_Center)
+				.HAlign(HAlign_Left)
+				.AutoWidth()
+				.Padding(5, 0, 0, 0)
+				[
+					SAssignNew(IgnoreExternalObjects, SCheckBox)
+					.IsChecked(true)
+				]
+
+				+ SHorizontalBox::Slot()
+				.VAlign(VAlign_Center)
+				.HAlign(HAlign_Left)
+				.AutoWidth()
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString("Ignore ExternalObjects"))
+					.ToolTipText(FText::FromString("When counting dependencies and listing assets, ignore ExternalObjects folders"))
 				]
 			]
 
@@ -183,8 +227,13 @@ void SDependencyAnalyserWidget::Construct(const FArguments& InArgs)
 				.FillWidth(0.2)
 				.OnSort(FOnSortModeChanged::CreateSP(this, &SDependencyAnalyserWidget::OnSortColumnHeader))
 
-				+ SHeaderRow::Column(Name_TotalSize)
-				.DefaultLabel(FText::FromName(Name_TotalSize))
+				+ SHeaderRow::Column(Name_DiskSize)
+				.DefaultLabel(FText::FromName(Name_DiskSize))
+				.FillWidth(0.1)
+				.OnSort(FOnSortModeChanged::CreateSP(this, &SDependencyAnalyserWidget::OnSortColumnHeader))
+
+				+ SHeaderRow::Column(Name_MemorySize)
+				.DefaultLabel(FText::FromName(Name_MemorySize))
 				.FillWidth(0.1)
 				.OnSort(FOnSortModeChanged::CreateSP(this, &SDependencyAnalyserWidget::OnSortColumnHeader))
 
@@ -249,21 +298,52 @@ FReply SDependencyAnalyserWidget::OnRun()
 		{
 			continue;
 		}
+		if (IgnoreExternalActors->IsChecked() &&
+			Results[i].PackageName.ToString().StartsWith("/Game/__ExternalActors__/"))
+		{
+			continue;
+		}
+		if (IgnoreExternalObjects->IsChecked() &&
+			Results[i].PackageName.ToString().StartsWith("/Game/__ExternalObjects__/"))
+		{
+			continue;
+		}
+
+		if (Results[i].AssetName.ToString().Contains("L_Expanse"))
+		{
+			UE_LOG(LogTemp, Log, TEXT(""));
+		}
 
 		FAssetData Result = Results[i];
 		const FDependenciesData Dependencies = UDependencyFunctionLibrary::GetDependencies(
 			AssetRegistryModule,
-			Result.PackageName,
+			Result,
 			IncludeSoftRef->IsChecked(),
 			IgnoreDevFolders->IsChecked());
-		FLineData Data = {Result.AssetName.ToString(), Dependencies.Amount, Dependencies.TotalSize, Result.GetClass(), Result.PackageName};
+		UClass* AssetClass = Result.GetClass();
+		FLineData Data = {Result.AssetName.ToString(), Dependencies.Amount, Dependencies.DiskSize, Dependencies.MemorySize, Result.GetAsset(), AssetClass, AssetClass->GetFName(), Result.PackageName};
+
+		if (const UBlueprint* InBlueprint = Cast<UBlueprint>(Data.Object))
+		{
+			Data.Class = InBlueprint->GeneratedClass;
+		}
+
 		LinesData.Add(MakeShared<FLineData>(Data));
 
-		if (int32 Size; UDependencyFunctionLibrary::IsErrorSize(Data.Class, Data.TotalSize, Size))
+		if (int32 Size; UDependencyFunctionLibrary::IsErrorDiskSize(Data.Class, Data.DiskSize, Size))
 		{
 			ErrorAssetsCount++;
 		}
-		else if (UDependencyFunctionLibrary::IsWarningSize(Data.Class, Data.TotalSize, Size))
+		else if (UDependencyFunctionLibrary::IsWarningDiskSize(Data.Class, Data.DiskSize, Size))
+		{
+			WarningAssetsCount++;
+		}
+
+		if (int32 Size; UDependencyFunctionLibrary::IsErrorMemorySize(Data.Class, Data.MemorySize, Size))
+		{
+			ErrorAssetsCount++;
+		}
+		else if (UDependencyFunctionLibrary::IsWarningMemorySize(Data.Class, Data.MemorySize, Size))
 		{
 			WarningAssetsCount++;
 		}
@@ -292,7 +372,7 @@ FReply SDependencyAnalyserWidget::OnExport()
 		FString Data = FString::Printf(TEXT("%s, %d, %d, %s, %s,"),
 			ToCStr(Line.Get()->Name),
 			Line.Get()->DependenciesCount,
-			static_cast<int32>(Line.Get()->TotalSize),
+			static_cast<int32>(Line.Get()->DiskSize),
 			ToCStr(Line.Get()->Class->GetName()),
 			ToCStr(Line.Get()->Path.ToString()));
 		Lines.Add(Data);
@@ -389,8 +469,10 @@ TSharedRef<ITableRow> SDependencyAnalyserWidget::OnGenerateLine(TSharedPtr<FLine
 	int32 Size;
 	return SNew(SDependencyAnalyserResultRow, Table)
 		.Item(Item)
-		.IsWarningSize(UDependencyFunctionLibrary::IsWarningSize(Item->Class, Item->TotalSize, Size))
-		.IsErrorSize(UDependencyFunctionLibrary::IsErrorSize(Item->Class, Item->TotalSize, Size));
+		.IsWarningSize(UDependencyFunctionLibrary::IsWarningDiskSize(Item->Class, Item->DiskSize, Size))
+		.IsErrorSize(UDependencyFunctionLibrary::IsErrorDiskSize(Item->Class, Item->DiskSize, Size))
+		.IsWarningMemorySize(UDependencyFunctionLibrary::IsWarningMemorySize(Item->Class, Item->MemorySize, Size))
+		.IsErrorMemorySize(UDependencyFunctionLibrary::IsErrorMemorySize(Item->Class, Item->MemorySize, Size));
 }
 
 void SDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::Type SortPriority, const FName& ColumnName, const EColumnSortMode::Type NewSortMode)
@@ -411,11 +493,19 @@ void SDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::Ty
 		};
 		LinesData.Sort(ReferenceCountSorter);
 	}
-	else if (ColumnName == Name_TotalSize)
+	else if (ColumnName == Name_DiskSize)
 	{
 		auto ReferenceCountSorter = [](const TSharedPtr<FLineData>& A, const TSharedPtr<FLineData>& B)
 		{
-			return static_cast<int32>(B.Get()->TotalSize) - static_cast<int32>(A.Get()->TotalSize) < 0.f;
+			return static_cast<int32>(B.Get()->DiskSize) - static_cast<int32>(A.Get()->DiskSize) < 0.f;
+		};
+		LinesData.Sort(ReferenceCountSorter);
+	}
+	else if (UDependencyFunctionLibrary::bEnableMemorySizeCalculation && ColumnName == Name_MemorySize)
+	{
+		auto ReferenceCountSorter = [](const TSharedPtr<FLineData>& A, const TSharedPtr<FLineData>& B)
+		{
+			return static_cast<int32>(B.Get()->MemorySize) - static_cast<int32>(A.Get()->MemorySize) < 0.f;
 		};
 		LinesData.Sort(ReferenceCountSorter);
 	}

@@ -16,6 +16,8 @@ public:
 	SLATE_ARGUMENT(TSharedPtr<FLineData>, Item)
 	SLATE_ARGUMENT(bool, IsWarningSize)
 	SLATE_ARGUMENT(bool, IsErrorSize)
+	SLATE_ARGUMENT(bool, IsWarningMemorySize)
+	SLATE_ARGUMENT(bool, IsErrorMemorySize)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwnerTableView);

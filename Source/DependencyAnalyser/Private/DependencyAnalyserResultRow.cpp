@@ -4,13 +4,18 @@
 
 #include "AssetManagerEditorModule.h"
 #include "ContentBrowserModule.h"
+#include "DependencyFunctionLibrary.h"
+#include "Editor.h"
 #include "IContentBrowserSingleton.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "Subsystems/AssetEditorSubsystem.h"
 
 void SDependencyAnalyserResultRow::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwnerTableView)
 {
 	Item = InArgs._Item;
-	bIsWarningSize = InArgs._IsWarningSize;
-	bIsErrorSize = InArgs._IsErrorSize;
+	bIsWarningSize = InArgs._IsWarningSize || InArgs._IsWarningMemorySize;
+	bIsErrorSize = InArgs._IsErrorSize || InArgs._IsErrorMemorySize;
 	
 	SMultiColumnTableRow::Construct(FSuperRowType::FArguments(), OwnerTableView);
 }
@@ -27,13 +32,17 @@ TSharedRef<SWidget> SDependencyAnalyserResultRow::GenerateWidgetForColumn(const 
 	{
 		ColumnText = FText::FromString(FString::FromInt(Item->DependenciesCount));
 	}
-	else if (InColumnName == SDependencyAnalyserWidget::Name_TotalSize)
+	else if (InColumnName == SDependencyAnalyserWidget::Name_DiskSize)
 	{
-		ColumnText = GetSizeText(Item->TotalSize);
+		ColumnText = GetSizeText(Item->DiskSize);
+	}
+	else if (UDependencyFunctionLibrary::bEnableMemorySizeCalculation && InColumnName == SDependencyAnalyserWidget::Name_MemorySize)
+	{
+		ColumnText = GetSizeText(Item->MemorySize);	
 	}
 	else if (InColumnName == SDependencyAnalyserWidget::Name_Type)
 	{
-		ColumnText = FText::FromString(Item->Class->GetName());
+		ColumnText = FText::FromString(Item->Type.ToString());
 	}
 	else if (InColumnName == SDependencyAnalyserWidget::Name_Path)
 	{

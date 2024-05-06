@@ -4,6 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"
+#include "Widgets/Input/SCheckBox.h"
+#include "Widgets/Input/SEditableTextBox.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Widgets/Views/SHeaderRow.h"
+#include "Widgets/Views/SListView.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogDependencyAnalyser, All, All);
 
@@ -12,8 +17,11 @@ struct DEPENDENCYANALYSER_API FLineData
 {
 	FString Name;
 	int32 DependenciesCount;
-	SIZE_T TotalSize;
+	SIZE_T DiskSize;
+	SIZE_T MemorySize;
+	UObject* Object;
 	UClass* Class;
+	FName Type;
 	FName Path;
 };
 
@@ -27,7 +35,8 @@ public:
 
 	static FName Name_Name;
 	static FName Name_DependenciesCount;
-	static FName Name_TotalSize;
+	static FName Name_DiskSize;
+	static FName Name_MemorySize;
 	static FName Name_Type;
 	static FName Name_Path;
 
@@ -61,6 +70,8 @@ private:
 
 	TSharedPtr<SCheckBox> IncludeSoftRef;
 	TSharedPtr<SCheckBox> IgnoreDevFolders;
+	TSharedPtr<SCheckBox> IgnoreExternalActors;
+	TSharedPtr<SCheckBox> IgnoreExternalObjects;
 	TSharedPtr<SEditableTextBox> WarningSize;
 	TSharedPtr<SEditableTextBox> ErrorSize;
 	TSharedPtr<SHeaderRow> HeaderRow;

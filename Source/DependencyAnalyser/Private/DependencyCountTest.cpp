@@ -1,10 +1,12 @@
 ﻿// Copyright 2024 YAGER Development GmbH All Rights Reserved.
 
 #include "DependencyFunctionLibrary.h"
+#include "AssetRegistry/AssetData.h"
 #include "Misc/AutomationTest.h"
+#include "Misc/Paths.h"
 
 IMPLEMENT_COMPLEX_AUTOMATION_TEST(FDependencyCountTest, "DependencyAnalyser.DependencyCountTest",
-                                 EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+                                  EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 void FDependencyCountTest::GetTests(TArray<FString>& OutBeautifiedNames, TArray<FString>& OutTestCommands) const
 {
@@ -24,9 +26,12 @@ bool FDependencyCountTest::RunTest(const FString& Parameters)
 {
 	const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 
+	FAssetData MockAssetData;
+	MockAssetData.PackageName = *Parameters;
+	
 	const FDependenciesData Dependencies = UDependencyFunctionLibrary::GetDependencies(
 		AssetRegistryModule,
-		FName(Parameters),
+		MockAssetData,
 		true,
 		true);
 

@@ -1,7 +1,10 @@
 // Copyright 2024 YAGER Development GmbH All Rights Reserved.
 
 #include "DependencyFunctionLibrary.h"
+
+#include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Misc/ConfigCacheIni.h"
 
 
 TArray<FAssetData> UDependencyFunctionLibrary::RunAssetAudit(const FAssetRegistryModule& AssetRegistryModule)
@@ -15,25 +18,49 @@ TArray<FAssetData> UDependencyFunctionLibrary::RunAssetAudit(const FAssetRegistr
 }
 
 FDependenciesData UDependencyFunctionLibrary::GetDependencies(const FAssetRegistryModule& AssetRegistryModule,
-	const FName PackageName, const bool IncludeSoftReferences, const bool IgnoreDevFolders)
+	const FAssetData& AssetData, const bool IncludeSoftReferences, const bool IgnoreDevFolders)
 {
 	FDependenciesData Data = {0, 0};
 	TArray<FName> Dependencies;
 
-	GetDependenciesRecursive(AssetRegistryModule, PackageName, UE::AssetRegistry::EDependencyQuery::Hard, IgnoreDevFolders, Dependencies);
+	GetDependenciesRecursive(AssetRegistryModule, AssetData.PackageName, UE::AssetRegistry::EDependencyQuery::Hard, IgnoreDevFolders, Dependencies);
 
 	if (IncludeSoftReferences)
 	{
-		GetDependenciesRecursive(AssetRegistryModule, PackageName, UE::AssetRegistry::EDependencyQuery::Soft, IgnoreDevFolders, Dependencies);
+		GetDependenciesRecursive(AssetRegistryModule, AssetData.PackageName, UE::AssetRegistry::EDependencyQuery::Soft, IgnoreDevFolders, Dependencies);
 	}
 	
 	for (const FName& Dependency : Dependencies)
 	{
 		const TOptional<FAssetPackageData> PackageData = AssetRegistryModule.Get().GetAssetPackageDataCopy(Dependency);
-		
+
 		Data.Amount++;
-		Data.TotalSize += PackageData->DiskSize;
+		Data.DiskSize += PackageData->DiskSize;
+
+		if (UDependencyFunctionLibrary::bEnableMemorySizeCalculation)
+		{
+			TArray<FAssetData> OutAssetData;
+			AssetRegistryModule.Get().GetAssetsByPackageName(Dependency, OutAssetData);
+			for (const FAssetData& DependencyAssetData : OutAssetData)
+			{
+				// Resource size can currently only be calculated for loaded assets, so load and check
+				if (UObject* DependencyAsset = DependencyAssetData.GetAsset())
+				{
+					Data.MemorySize += DependencyAsset->GetResourceSizeBytes(EResourceSizeMode::EstimatedTotal);
+				}
+			}
+		}
 	}
+
+	if (UDependencyFunctionLibrary::bEnableMemorySizeCalculation)
+	{
+		// Resource size can currently only be calculated for loaded assets, so load and check
+		if (UObject* Asset = AssetData.GetAsset())
+		{
+			Data.MemorySize += Asset->GetResourceSizeBytes(EResourceSizeMode::EstimatedTotal);
+		}
+	}
+	
 	
 	return Data;
 }
@@ -45,6 +72,7 @@ void UDependencyFunctionLibrary::CacheConfig()
 	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("DefaultWarningReferenceCount"), CachedDefaultWarningCount, GEngineIni);
 	GConfig->GetInt(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("DefaultErrorReferenceCount"), CachedDefaultErrorCount, GEngineIni);
 	GConfig->GetBool(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("bFailForWarnings"), bCachedFailForWarnings, GEngineIni);
+	GConfig->GetBool(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("bEnableMemorySizeCalculation"), bEnableMemorySizeCalculation, GEngineIni);
 
 	FString SingleStringFromConfig;
 	TArray<FString> ExtensionTypes;
@@ -54,18 +82,22 @@ void UDependencyFunctionLibrary::CacheConfig()
 	
 	for (const FString& Type : ExtensionTypes)
 	{
-		FString ClassStr, DepStr, PackageStr, NameStr, SizeStr, CountStr;
+		FString ClassStr, DepStr, PackageStr, NameStr, DiskSizeStr, MemorySizeStr, CountStr;
 		Type.Split(TEXT(", "), &ClassStr, &DepStr);
 		ClassStr.Split(TEXT("\'\""), &PackageStr, &NameStr);
 		NameStr.RemoveFromEnd(TEXT("\"\'"));
-		DepStr.Split(TEXT(","), &SizeStr, &CountStr);
-		SizeStr.ReplaceInline(TEXT("(SizeLimit="), TEXT(""));
+		DepStr.Split(TEXT(","), &DiskSizeStr, &MemorySizeStr);
+		MemorySizeStr.Split(TEXT(","), &MemorySizeStr, &CountStr);
+		DiskSizeStr.ReplaceInline(TEXT("(DiskSizeLimit="), TEXT(""));
+		MemorySizeStr.ReplaceInline(TEXT("MemorySizeLimit="), TEXT(""));
 		CountStr.ReplaceInline(TEXT("ReferenceCountLimit="), TEXT(""));
 
-		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *NameStr))
+		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *ClassStr))
 		{
-			int32 ParsedSize = FCString::Atoi(*SizeStr);
-			CachedWarningSizePerType.Add(ParsedClass, ParsedSize);
+			int32 ParsedDiskSize = FCString::Atoi(*DiskSizeStr);
+			CachedWarningDiskSizePerType.Add(ParsedClass, ParsedDiskSize);
+			int32 ParsedMemorySize = FCString::Atoi(*MemorySizeStr);
+			CachedWarningMemorySizePerType.Add(ParsedClass, ParsedMemorySize);
 			int32 ParsedCount = FCString::Atoi(*CountStr);
 			CachedWarningCountPerType.Add(ParsedClass, ParsedCount);
 		}
@@ -76,30 +108,45 @@ void UDependencyFunctionLibrary::CacheConfig()
 	
 	for (const FString& Type : ExtensionTypes)
 	{
-		FString ClassStr, DepStr, PackageStr, NameStr, SizeStr, CountStr;
+		FString ClassStr, DepStr, PackageStr, NameStr, DiskSizeStr, MemorySizeStr, CountStr;
 		Type.Split(TEXT(", "), &ClassStr, &DepStr);
 		ClassStr.Split(TEXT("\'\""), &PackageStr, &NameStr);
 		NameStr.RemoveFromEnd(TEXT("\"\'"));
-		DepStr.Split(TEXT(","), &SizeStr, &CountStr);
-		SizeStr.ReplaceInline(TEXT("(SizeLimit="), TEXT(""));
+		DepStr.Split(TEXT(","), &DiskSizeStr, &MemorySizeStr);
+		MemorySizeStr.Split(TEXT(","), &MemorySizeStr, &CountStr);
+		DiskSizeStr.ReplaceInline(TEXT("(DiskSizeLimit="), TEXT(""));
+		MemorySizeStr.ReplaceInline(TEXT("MemorySizeLimit="), TEXT(""));
 		CountStr.ReplaceInline(TEXT("ReferenceCountLimit="), TEXT(""));
-
-		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *NameStr))
+	
+		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *ClassStr))
 		{
-			int32 ParsedSize = FCString::Atoi(*SizeStr);
-			CachedErrorSizePerType.Add(ParsedClass, ParsedSize);
+			int32 ParsedDiskSize = FCString::Atoi(*DiskSizeStr);
+			CachedErrorDiskSizePerType.Add(ParsedClass, ParsedDiskSize);
+			int32 ParsedMemorySize = FCString::Atoi(*MemorySizeStr);
+			CachedErrorMemorySizePerType.Add(ParsedClass, ParsedMemorySize);
 			int32 ParsedCount = FCString::Atoi(*CountStr);
 			CachedErrorCountPerType.Add(ParsedClass, ParsedCount);
 		}
 	}
 }
 
-bool UDependencyFunctionLibrary::IsWarningSize(const UClass* Class, const SIZE_T Size, int32& OutWarningSize)
+bool UDependencyFunctionLibrary::IsWarningDiskSize(const UClass* Class, const SIZE_T Size, int32& OutWarningSize)
 {
 	OutWarningSize = CachedDefaultWarningSize;
-	if (CachedWarningSizePerType.Contains(Class))
+	if (CachedWarningDiskSizePerType.Contains(Class))
 	{
-		OutWarningSize = CachedWarningSizePerType.FindChecked(Class);
+		OutWarningSize = CachedWarningDiskSizePerType.FindChecked(Class);
+	}
+		
+	return IsOverMBSize(Size, OutWarningSize);
+}
+
+bool UDependencyFunctionLibrary::IsWarningMemorySize(const UClass* Class, const SIZE_T Size, int32& OutWarningSize)
+{
+	OutWarningSize = CachedDefaultWarningSize;
+	if (CachedWarningMemorySizePerType.Contains(Class))
+	{
+		OutWarningSize = CachedWarningMemorySizePerType.FindChecked(Class);
 	}
 		
 	return IsOverMBSize(Size, OutWarningSize);
@@ -112,18 +159,29 @@ bool UDependencyFunctionLibrary::IsWarningCount(const UClass* Class, const int32
 	{
 		OutWarningCount = CachedWarningCountPerType.FindChecked(Class);
 	}
-		
-	return IsOverMBSize(Count, OutWarningCount);
+	
+	return Count > OutWarningCount;		
 }
 
-bool UDependencyFunctionLibrary::IsErrorSize(const UClass* Class, const SIZE_T Size, int32& OutErrorSize)
+bool UDependencyFunctionLibrary::IsErrorDiskSize(const UClass* Class, const SIZE_T Size, int32& OutErrorSize)
 {
 	OutErrorSize = CachedDefaultErrorSize;
-	if (CachedErrorSizePerType.Contains(Class))
+	if (CachedErrorDiskSizePerType.Contains(Class))
 	{
-		OutErrorSize = CachedErrorSizePerType.FindChecked(Class);
+		OutErrorSize = CachedErrorDiskSizePerType.FindChecked(Class);
 	}
 		
+	return IsOverMBSize(Size, OutErrorSize);
+}
+
+bool UDependencyFunctionLibrary::IsErrorMemorySize(const UClass* Class, const SIZE_T Size, int32& OutErrorSize)
+{
+	OutErrorSize = CachedDefaultErrorSize;
+	if (CachedErrorMemorySizePerType.Contains(Class))
+	{
+		OutErrorSize = CachedErrorMemorySizePerType.FindChecked(Class);
+	}
+
 	return IsOverMBSize(Size, OutErrorSize);
 }
 
@@ -134,8 +192,8 @@ bool UDependencyFunctionLibrary::IsErrorCount(const UClass* Class, const int32 C
 	{
 		OutErrorCount = CachedErrorCountPerType.FindChecked(Class);
 	}
-		
-	return IsOverMBSize(Count, OutErrorCount);
+
+	return Count > OutErrorCount;
 }
 
 void UDependencyFunctionLibrary::GetDependenciesRecursive(const FAssetRegistryModule& AssetRegistryModule,
@@ -170,5 +228,6 @@ void UDependencyFunctionLibrary::GetDependenciesRecursive(const FAssetRegistryMo
 
 bool UDependencyFunctionLibrary::IsOverMBSize(const SIZE_T Size, const int32 SizeMB)
 {
-	return Size >= SizeMB * 1000000;
+	const int32 TotalMB = SizeMB * 1000000;
+	return Size > TotalMB;
 }
