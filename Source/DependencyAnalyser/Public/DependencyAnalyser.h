@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Framework/Commands/UICommandList.h"
 #include "Modules/ModuleManager.h"
-#include "Widgets/Docking/SDockTab.h"
 
+class FUICommandList;
+class FSpawnTabArgs;
+class SDockTab;
 class FToolBarBuilder;
 class FMenuBuilder;
 

@@ -2,15 +2,15 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"
-#include "Widgets/Input/SCheckBox.h"
-#include "Widgets/Input/SEditableTextBox.h"
-#include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SHeaderRow.h"
 #include "Widgets/Views/SListView.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogDependencyAnalyser, All, All);
+
+class SCheckBox;
+class SEditableTextBox;
+class STextBlock;
 
 // Data for each result row of an analysis
 struct DEPENDENCYANALYSER_API FLineData

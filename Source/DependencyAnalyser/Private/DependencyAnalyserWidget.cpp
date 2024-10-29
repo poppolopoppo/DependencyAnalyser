@@ -10,6 +10,7 @@
 #include "Misc/FileHelper.h"
 #include "Misc/ScopedSlowTask.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Input/SSearchBox.h"
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
