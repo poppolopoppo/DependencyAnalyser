@@ -6,14 +6,11 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Misc/ConfigCacheIni.h"
 
-TArray<FAssetData> UDependencyFunctionLibrary::RunAssetAudit(const FAssetRegistryModule& AssetRegistryModule)
+void UDependencyFunctionLibrary::RunAssetAudit(const FAssetRegistryModule& AssetRegistryModule, TArray<FAssetData>& AssetData)
 {
 	CacheConfig();
 	
-	TArray<FAssetData> AssetData;
 	AssetRegistryModule.Get().GetAssetsByPath("/Game", AssetData, true);
-
-	return AssetData;
 }
 
 FDependenciesData UDependencyFunctionLibrary::GetDependencies(const FAssetRegistryModule& AssetRegistryModule,
@@ -79,7 +76,10 @@ void UDependencyFunctionLibrary::CacheConfig()
 
 	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("WarningLimitsPerAssetType"), SingleStringFromConfig, GEngineIni);
 	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
-	
+	CachedWarningDiskSizePerType.Empty();
+	CachedWarningMemorySizePerType.Empty();
+	CachedWarningCountPerType.Empty();
+
 	for (const FString& Type : ExtensionTypes)
 	{
 		FString ClassStr, DepStr, PackageStr, NameStr, DiskSizeStr, MemorySizeStr, CountStr;
@@ -105,6 +105,9 @@ void UDependencyFunctionLibrary::CacheConfig()
 
 	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("ErrorLimitsPerAssetType"), SingleStringFromConfig, GEngineIni);
 	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
+	CachedErrorDiskSizePerType.Empty();
+	CachedErrorMemorySizePerType.Empty();
+	CachedErrorCountPerType.Empty();
 	
 	for (const FString& Type : ExtensionTypes)
 	{
@@ -126,6 +129,18 @@ void UDependencyFunctionLibrary::CacheConfig()
 			CachedErrorMemorySizePerType.Add(ParsedClass, ParsedMemorySize);
 			int32 ParsedCount = FCString::Atoi(*CountStr);
 			CachedErrorCountPerType.Add(ParsedClass, ParsedCount);
+		}
+	}
+
+	GConfig->GetString(TEXT("/Script/DependencyAnalyser.DependencyAnalyserTestSettings"), TEXT("OnlyAnalyseAssetTypes"), SingleStringFromConfig, GEngineIni);
+	SingleStringFromConfig.ParseIntoArray(ExtensionTypes, TEXT("),("));
+	CachedOnlyAnalyseAssetTypes.Empty();
+
+	for (const FString& Type : ExtensionTypes)
+	{
+		if (UClass* ParsedClass = FindObject<UClass>(nullptr, *Type))
+		{
+			CachedOnlyAnalyseAssetTypes.Add(ParsedClass);
 		}
 	}
 }

@@ -22,7 +22,7 @@ class DEPENDENCYANALYSER_API UDependencyFunctionLibrary : public UBlueprintFunct
 public:
 	
 	// Retrieves all assets to analyse
-	static TArray<FAssetData> RunAssetAudit(const FAssetRegistryModule& AssetRegistryModule);
+	static void RunAssetAudit(const FAssetRegistryModule& AssetRegistryModule, TArray<FAssetData>& AssetData);
 
 	// Collects and returns dependencies from an internal recursive call
 	static FDependenciesData GetDependencies(const FAssetRegistryModule& AssetRegistryModule, const FAssetData& AssetData,
@@ -45,6 +45,7 @@ public:
 	inline static int32 CachedDefaultErrorSize = 500;
 	inline static int32 CachedDefaultWarningCount = 10;
 	inline static int32 CachedDefaultErrorCount = 100;
+	inline static TArray<UClass*> CachedOnlyAnalyseAssetTypes;
 	inline static bool bCachedFailForWarnings;
 	inline static bool bEnableMemorySizeCalculation;
 

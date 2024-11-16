@@ -279,7 +279,8 @@ void SDependencyAnalyserWidget::Construct(const FArguments& InArgs)
 FReply SDependencyAnalyserWidget::OnRun()
 {
 	const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-	TArray<FAssetData> Results = UDependencyFunctionLibrary::RunAssetAudit(AssetRegistryModule);
+	TArray<FAssetData> Results;
+	UDependencyFunctionLibrary::RunAssetAudit(AssetRegistryModule, Results);
 	UDependencyFunctionLibrary::CachedDefaultWarningSize = FCString::Atoi(*WarningSize.Get()->GetText().ToString());
 	UDependencyFunctionLibrary::CachedDefaultErrorSize = FCString::Atoi(*ErrorSize.Get()->GetText().ToString());
 
@@ -306,6 +307,10 @@ FReply SDependencyAnalyserWidget::OnRun()
 		}
 		if (IgnoreExternalObjects->IsChecked() &&
 			Results[i].PackageName.ToString().StartsWith("/Game/__ExternalObjects__/"))
+		{
+			continue;
+		}
+		if (!UDependencyFunctionLibrary::CachedOnlyAnalyseAssetTypes.IsEmpty() && !UDependencyFunctionLibrary::CachedOnlyAnalyseAssetTypes.Contains(Results[i].GetClass()))
 		{
 			continue;
 		}
