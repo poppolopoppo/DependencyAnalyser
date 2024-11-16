@@ -31,7 +31,7 @@ class DEPENDENCYANALYSER_API UDependencyAnalyserTestSettings : public UObject
 public:
 	// A list of asset types to analyse - leave empty to analyse all assets (might be slow!)
 	UPROPERTY(EditAnywhere, config, Category="Settings")
-	TArray<UClass*> OnlyAnalyseAssetTypes = { UWorld::StaticClass() };
+	TArray<UClass*> OnlyAnalyseAssetTypes = { UBlueprint::StaticClass() };
 	
 	// Whether to include memory size calculation
 	UPROPERTY(EditAnywhere, config, Category="Settings")
