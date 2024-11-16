@@ -37,6 +37,8 @@ public:
 	static bool IsErrorCount(const UClass* Class, const int32 Count, int32& OutErrorCount);
 	static bool IsOverMBSize(const SIZE_T Size, const int32 SizeMB);
 
+	static FText GetSizeText(const SIZE_T SizeInBytes);
+
 	// Retrieval and caching of config data
 	static void CacheConfig();
 	inline static int32 CachedDefaultWarningSize = 50;
@@ -49,7 +51,7 @@ public:
 private:
 	
 	// Collects dependencies recursively
-	static void GetDependenciesRecursive(const FAssetRegistryModule& AssetRegistryModule, const FName PackageName,
+	static void GetDependenciesRecursive(const FAssetRegistryModule& AssetRegistryModule, const FName& PackageName,
 		const UE::AssetRegistry::EDependencyQuery QueryType, const bool IgnoreDevFolders, TArray<FName>& OutDependencies);
 
 	// Retrieved and cached config data
