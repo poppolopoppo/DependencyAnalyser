@@ -4,6 +4,7 @@
 
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
+#include "Engine/Blueprint.h"
 #include "DependencyAnalyserTestSettings.generated.h"
 
 USTRUCT()
