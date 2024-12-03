@@ -6,7 +6,7 @@
 
 void FDependencyAnalyserCommands::RegisterCommands()
 {
-	UI_COMMAND(OpenPluginWindow, "Dependency Analyser", "Bring up Dependency Analyser window", EUserInterfaceActionType::Button, FInputGesture());
+	UI_COMMAND(OpenPluginWindow, "Dependency Analyser", "Bring up Dependency Analyser window", EUserInterfaceActionType::Button, FInputChord());
 }
 
 #undef LOCTEXT_NAMESPACE
