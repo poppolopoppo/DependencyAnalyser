@@ -32,7 +32,7 @@ FDependenciesData UDependencyFunctionLibrary::GetDependencies(const FAssetRegist
 		AssetRegistryModule.Get().TryGetAssetPackageData(Dependency, OutAssetPackageData);
 
 		Data.Amount++;
-		Data.DiskSize += OutAssetPackageData.DiskSize;
+		Data.DiskSize += static_cast<SIZE_T>(OutAssetPackageData.DiskSize);
 
 		if (UDependencyFunctionLibrary::bEnableMemorySizeCalculation)
 		{
@@ -58,7 +58,7 @@ FDependenciesData UDependencyFunctionLibrary::GetDependencies(const FAssetRegist
 		}
 	}
 	
-	
+
 	return Data;
 }
 
@@ -243,7 +243,7 @@ void UDependencyFunctionLibrary::GetDependenciesRecursive(const FAssetRegistryMo
 
 bool UDependencyFunctionLibrary::IsOverMBSize(const SIZE_T Size, const int32 SizeMB)
 {
-	const int32 TotalMB = SizeMB * 1000000;
+	const SIZE_T TotalMB = static_cast<SIZE_T>(SizeMB) * 1000000;
 	return Size > TotalMB;
 }
 

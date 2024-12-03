@@ -289,7 +289,7 @@ FReply SDependencyAnalyserWidget::OnRun()
 	int32 ErrorAssetsCount = 0;
 	int32 WarningAssetsCount = 0;
 
-	FScopedSlowTask ExplorePathsTask(Results.Num(), FText::FromString("Running..."));
+	FScopedSlowTask ExplorePathsTask(static_cast<float>(Results.Num()), FText::FromString("Running..."));
 	ExplorePathsTask.MakeDialog();
 
 	for (int32 i = 0; i < Results.Num(); i++)
@@ -360,7 +360,7 @@ FReply SDependencyAnalyserWidget::OnRun()
 
 	auto ReferenceCountSorter = [](const TSharedPtr<FLineData>& A, const TSharedPtr<FLineData>& B)
 	{
-		return B.Get()->DependenciesCount - A.Get()->DependenciesCount < 0.f;
+		return (B.Get()->DependenciesCount - A.Get()->DependenciesCount) < 0;
 	};
 	LinesData.Sort(ReferenceCountSorter);
 	
@@ -497,7 +497,7 @@ void SDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::Ty
 	{
 		auto ReferenceCountSorter = [](const TSharedPtr<FLineData>& A, const TSharedPtr<FLineData>& B)
 		{
-			return B.Get()->DependenciesCount - A.Get()->DependenciesCount < 0.f;
+			return (B.Get()->DependenciesCount - A.Get()->DependenciesCount) < 0;
 		};
 		LinesData.Sort(ReferenceCountSorter);
 	}
@@ -505,7 +505,7 @@ void SDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::Ty
 	{
 		auto ReferenceCountSorter = [](const TSharedPtr<FLineData>& A, const TSharedPtr<FLineData>& B)
 		{
-			return static_cast<int32>(B.Get()->DiskSize) - static_cast<int32>(A.Get()->DiskSize) < 0.f;
+			return (static_cast<int64>(B.Get()->DiskSize) - static_cast<int64>(A.Get()->DiskSize)) < 0;
 		};
 		LinesData.Sort(ReferenceCountSorter);
 	}
@@ -513,7 +513,7 @@ void SDependencyAnalyserWidget::OnSortColumnHeader(const EColumnSortPriority::Ty
 	{
 		auto ReferenceCountSorter = [](const TSharedPtr<FLineData>& A, const TSharedPtr<FLineData>& B)
 		{
-			return static_cast<int32>(B.Get()->MemorySize) - static_cast<int32>(A.Get()->MemorySize) < 0.f;
+			return (static_cast<int64>(B.Get()->MemorySize) - static_cast<int64>(A.Get()->MemorySize)) < 0;
 		};
 		LinesData.Sort(ReferenceCountSorter);
 	}
